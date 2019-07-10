@@ -11,7 +11,7 @@ HTUV(Human Tracking Unmanned Vehicle; 인명추적무인차량)은 경기대학�
 | ----------------- | --------- |
 | [CUDA Toolkit](https://github.com/moonyeol/HumanTrackingDrone/wiki/(Gihwan)-Library-Installation#%EB%9D%BC%EC%9D%B4%EB%B8%8C%EB%9F%AC%EB%A6%AC-cuda-100)              | 10.0      |
 | cuDNN             | 7.4.1     |
-| OpenCV            | 4.0.1     |
+| [OpenCV](https://github.com/moonyeol/HumanTrackingDrone/wiki/(Gihwan)-Library-Installation#%EB%9D%BC%EC%9D%B4%EB%B8%8C%EB%9F%AC%EB%A6%AC-opencv-401)            | 4.0.1     |
 | TensorFlow (GPU)  | 1.13.1    |
 | Python            | 3.6.x     |
 | Ubuntu            | 18.04 LTS |
