@@ -5,7 +5,6 @@ import cv2
 import camera
 import os
 import numpy as np
-from matplotlib import pyplot as plt
 
 class FaceRecog():
     def __init__(self):
