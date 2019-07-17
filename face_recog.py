@@ -58,7 +58,8 @@ class FaceRecog():
         # Only process every other frame of video to save time
         if self.process_this_frame:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            self.boxes, weights = hog.detectMultiScale(gray, winStride=(8,8) ,scale=1.05)
+            # self.boxes, weights = hog.detectMultiScale(gray, winStride=(8,8), scale=1.05)
+            self.boxes, weights = hog.detectMultiScale(gray)
             self.boxes = np.array([[x, y, x + w, y + h] for (x, y, w, h) in self.boxes])
 
 
