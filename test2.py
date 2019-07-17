@@ -1,12 +1,11 @@
-# import the necessary packages
 import numpy as np
 import cv2
+from matplotlib import pyplot as plt
 import camera
-import os
 
 cam = camera.VideoCamera()
 
-
+body_cascade = cv2.CascadeClassifier('/usr/share/opencv/haarcascades/haarcascade_fullbody.xml')
 # initialize the HOG descriptor/person detector
 hog = cv2.HOGDescriptor()
 hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
@@ -23,12 +22,9 @@ while (True):
 
     # detect people in the image
     # returns the bounding boxes for the detected objects
-    boxes, weights = hog.detectMultiScale(gray, winStride=(8, 8))
-    boxes = np.array([[x, y, x + w, y + h] for (x, y, w, h) in boxes])
-    for (xA, yA, xB, yB) in boxes:
-        # display the detected boxes in the colour picture
-        cv2.rectangle(frame, (xA, yA), (xB, yB),
-                      (0, 255, 0), 2)
+    faces_in_body = body_cascade.detectMultiScale(gray, 1.01, 10)
+    for (xf,yf,wf,hf) in faces_in_body:
+        cv2.rectangle(frame,(xf,yf),(xf+wf,yf+hf),(0,255,0),2)
 
     # Write the output video
 

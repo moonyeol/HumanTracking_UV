@@ -40,6 +40,7 @@ class FaceRecog():
 
     def get_frame(self):
         hog = cv2.HOGDescriptor()
+
         hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
         # cv2.startWindowThread()
 
@@ -57,15 +58,8 @@ class FaceRecog():
         # Only process every other frame of video to save time
         if self.process_this_frame:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            boxes, weights = hog.detectMultiScale(gray, winStride=(8,8) )
-            boxes = np.array([[x, y, x + w, y + h] for (x, y, w, h) in boxes])
-            for (xA, yA, xB, yB) in boxes:
-                # display the detected boxes in the colour picture
-                cv2.rectangle(frame, (xA, yA), (xB, yB),
-                              (0, 255, 0), 2)
-
-            # self.body = body_cascade.detectMultiScale(gray, 1.01, 10)
-
+            self.boxes, weights = hog.detectMultiScale(gray, winStride=(8,8) ,scale=1.05)
+            self.boxes = np.array([[x, y, x + w, y + h] for (x, y, w, h) in self.boxes])
 
 
             # Find all the faces and face encodings in the current frame of video
@@ -93,14 +87,12 @@ class FaceRecog():
         # for (x, y, w, h) in self.body:
         #     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 3)
 
-
+        for (xA, yA, xB, yB) in self.boxes:
+            # display the detected boxes in the colour picture
+            cv2.rectangle(frame, (xA, yA), (xB, yB), (0, 255, 0), 2)
         # Display the results
         for (top, right, bottom, left), name in zip(self.face_locations, self.face_names):
-            # Scale back up face locations since the frame we detected in was scaled to 1/4 size
-            top *= 1
-            right *= 1
-            bottom *= 1
-            left *= 1
+
 
 
             # Draw a box around the face
