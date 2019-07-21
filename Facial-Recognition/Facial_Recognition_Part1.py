@@ -10,7 +10,8 @@ import numpy as np
 # NOTE `cv2.CascadeClassifier`: load a classifier from a file "./haarcascade_frontalface_default.xml" which only detects frontal face.
 face_classifier = cv2.CascadeClassifier('./haarcascade_frontalface_default.xml')
 
-# SECTION `face_extractor`: pass the argument to `img` and detect the frontal face. 
+
+# SECTION Function`face_extractor`: pass the argument to `img` and detect the frontal face. 
 def face_extractor(img):
 
     """
@@ -34,6 +35,8 @@ def face_extractor(img):
     # return cropped face from `img`.
     return cropped_face
 
+
+# SECTION Loop for activation and usage of function `face_extractor` to extract facial sample.
 cap = cv2.VideoCapture(0)   # Activate video capturing device such as webcam.
 count = 0                   # Counts how many screenshot of the video was captured.
 
