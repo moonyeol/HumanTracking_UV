@@ -44,7 +44,7 @@ count = 0                   # Counts how many screenshot of the video was captur
 while True:
     ret, frame = cap.read() # `ret` is boolean True when capture is successful in spite of facial detection. Frame contains screenshot image data.
 
-    # 
+    # If computer detects object that deems as "face" according to the cascade classifier...
     if face_extractor(frame) is not None:
         count+=1   # increase counter as face is detected.
 
@@ -62,7 +62,7 @@ while True:
         cv2.putText(face,str(count),(50,50),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),2)
         cv2.imshow('Face Cropper',face)
     
-    # If no face detected via returned value of "None"
+    # If no face detected via returned value of "None"...
     else:
         print("Face not Found")
         pass
