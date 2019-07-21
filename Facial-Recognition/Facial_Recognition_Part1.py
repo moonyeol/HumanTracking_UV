@@ -4,6 +4,7 @@
 ==================================================
 """
 
+import os
 import cv2
 import numpy as np
 
@@ -52,6 +53,8 @@ while True:
         face = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
 
         # save the frontal face sample under the following path.
+        if not os.path.exists("faces"):   # if the path does not exist,
+            os.mkdir("faces")             # then create the `./faces/` directory.
         file_name_path = './faces/user'+str(count)+'.jpg'
         cv2.imwrite(file_name_path,face)
 
