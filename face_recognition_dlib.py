@@ -3,12 +3,19 @@ import os
 import dlib
 import glob
 import numpy as np
+import cv2
+import multiprocessing
+import PIL.Image
+from PIL import ImageFile
+import argparse
+import imutils
+from imutils.video import FPS
 
-
-pose_predictor_model_location = "models/shape_predictor_68_face_landmarks.dat"
-pose_predictor_five_point_model_location = "models/shape_predictor_5_face_landmarks.dat"
-face_recognition_model_location = "models/dlib_face_recognition_resnet_model_v1.dat"
-cnn_face_detector_model_location = "models/mmod_human_face_detector.dat"
+face_detector = dlib.get_frontal_face_detector()
+predictor_68_point_model = "models/shape_predictor_68_face_landmarks.dat"
+predictor_5_point_model = "models/shape_predictor_5_face_landmarks.dat"
+face_recognition_model = "models/dlib_face_recognition_resnet_model_v1.dat"
+cnn_face_detection_model = "models/mmod_human_face_detector.dat"
 
 
 detector = dlib.get_frontal_face_detector()
@@ -189,3 +196,202 @@ def compare_faces(known_face_encodings, face_encoding_to_check, tolerance=0.6):
     :return: A list of True/False values indicating which known_face_encodings match the face encoding to check
     """
     return list(face_distance(known_face_encodings, face_encoding_to_check) <= tolerance)
+
+def start_tracker(box, label, rgb, inputQueue, outputQueue):
+	# construct a dlib rectangle object from the bounding box
+	# coordinates and then start the correlation tracker
+	t = dlib.correlation_tracker()
+	rect = dlib.rectangle(box[0], box[1], box[2], box[3])
+	t.start_track(rgb, rect)
+
+	# loop indefinitely -- this function will be called as a daemon
+	# process so we don't need to worry about joining it
+	while True:
+		# attempt to grab the next frame from the input queue
+		rgb = inputQueue.get()
+
+		# if there was an entry in our queue, process it
+		if rgb is not None:
+			# update the tracker and grab the position of the tracked
+			# object
+			t.update(rgb)
+			pos = t.get_position()
+
+			# unpack the position object
+			startX = int(pos.left())
+			startY = int(pos.top())
+			endX = int(pos.right())
+			endY = int(pos.bottom())
+
+			# add the label + bounding box coordinates to the output
+			# queue
+			outputQueue.put((label, (startX, startY, endX, endY)))
+
+
+if __name__ == '__main__':
+
+    known_face_names = []
+    known_face_encodings = []
+    dirname = 'knowns'
+    files = os.listdir(dirname)
+    for filename in files:
+        name, ext = os.path.splitext(filename)
+        if ext == '.jpg':
+
+            known_face_names.append(name)
+            pathname = os.path.join(dirname, filename)
+
+            im = PIL.Image.open(pathname)
+            img = np.array(im)
+            face_encoding = face_encodings(img)[0]
+            known_face_encodings.append(face_encoding)
+
+    # Initialize some variables
+    f_locations = []
+    f_encodings = []
+    face_names = []
+
+
+
+    # construct the argument parser and parse the arguments
+    ap = argparse.ArgumentParser()
+    # ap.add_argument("-p", "--prototxt", required=True,
+    # 	help="path to Caffe 'deploy' prototxt file")
+    # ap.add_argument("-m", "--model", required=True,
+    # 	help="path to Caffe pre-trained model")
+    ap.add_argument("-c", "--confidence", type=float, default=0.2,
+                    help="minimum probability to filter weak detections")
+    args = vars(ap.parse_args())
+
+    prototxt = "mobilenet_ssd/MobileNetSSD_deploy.prototxt"
+    model = "mobilenet_ssd/MobileNetSSD_deploy.caffemodel"
+
+    # initialize our list of queues -- both input queue and output queue
+    # for *every* object that we will be tracking
+    inputQueues = []
+    outputQueues = []
+
+    # initialize the list of class labels MobileNet SSD was trained to
+    # detect
+    CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
+               "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
+               "dog", "horse", "motorbike", "person", "pottedplant", "sheep",
+               "sofa", "train", "tvmonitor"]
+
+    # load our serialized model from disk
+    print("[INFO] loading model...")
+    net = cv2.dnn.readNetFromCaffe(prototxt, model)
+
+    # initialize the video stream and output video writer
+    print("[INFO] starting video stream...")
+    vs = cv2.VideoCapture(0)
+    writer = None
+
+    # start the frames per second throughput estimator
+    fps = FPS().start()
+
+    # loop over frames from the video file stream
+    while True:
+        # grab the next frame from the video file
+        (grabbed, frame) = vs.read()
+
+        # check to see if we have reached the end of the video file
+        if frame is None:
+            break
+
+        frame = imutils.resize(frame, width=600)
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        rgb_small_frame = frame[:, :, ::-1]
+
+
+        f_locations = face_locations(rgb_small_frame)
+        f_encodings = face_encodings(rgb_small_frame, f_locations)
+
+        face_names = []
+
+
+        (h, w) = frame.shape[:2]
+        blob = cv2.dnn.blobFromImage(frame, 0.007843, (w, h), 127.5)
+
+        net.setInput(blob)
+        detections = net.forward()
+
+
+
+        for face_encoding in f_encodings:
+            # See if the face is a match for the known face(s)
+            distances = face_distance(known_face_encodings, face_encoding)
+            min_value = min(distances)
+
+            # tolerance: How much distance between faces to consider it a match. Lower is more strict.
+            # 0.6 is typical best performance.
+            name = "Unknown"
+            if min_value < 0.6:
+                index = np.argmin(distances)
+                name = known_face_names[index]
+
+            face_names.append(name)
+
+
+
+        for (top, right, bottom, left), name in zip(f_locations, face_names):
+            cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+
+            # Draw a label with a name below the face
+            cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
+            font = cv2.FONT_HERSHEY_DUPLEX
+            cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
+
+
+
+
+        # loop over the detections
+        for i in np.arange(0, detections.shape[2]):
+            confidence = detections[0, 0, i, 2]
+
+            # filter out weak detections by requiring a minimum
+            # confidence
+            if confidence > args["confidence"]:
+
+                idx = int(detections[0, 0, i, 1])
+                label = CLASSES[idx]
+
+                if CLASSES[idx] != "person":
+                    continue
+
+                box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
+                (startX, startY, endX, endY) = box.astype("int")
+                bb = (startX, startY, endX, endY)
+
+                cv2.rectangle(frame, (startX, startY), (endX, endY),
+                              (0, 255, 0), 2)
+                cv2.putText(frame, label, (startX, startY - 15),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 2)
+
+
+        if writer is not None:
+            writer.write(frame)
+
+        # show the output frame
+        cv2.imshow("Frame", frame)
+        key = cv2.waitKey(1) & 0xFF
+
+        # if the `q` key was pressed, break from the loop
+        if key == ord("q"):
+            break
+
+        # update the FPS counter
+        fps.update()
+
+    # stop the timer and display FPS information
+    fps.stop()
+    print("[INFO] elapsed time: {:.2f}".format(fps.elapsed()))
+    print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
+
+    # check to see if we need to release the video writer pointer
+    if writer is not None:
+        writer.release()
+
+    # do a bit of cleanup
+    cv2.destroyAllWindows()
+    vs.release()
