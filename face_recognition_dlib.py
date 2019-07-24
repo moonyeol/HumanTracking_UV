@@ -19,11 +19,11 @@ cnn_face_detection_model = "models/mmod_human_face_detector.dat"
 
 
 detector = dlib.get_frontal_face_detector()
+
 pose_predictor_68_point = dlib.shape_predictor(predictor_68_point_model)
 pose_predictor_5_point = dlib.shape_predictor(predictor_5_point_model)
-cnn_face_detector = dlib.cnn_face_detection_model_v1(cnn_face_detection_model)
 face_encoder = dlib.face_recognition_model_v1(face_recognition_model)
-
+cnn_face_detector = dlib.cnn_face_detection_model_v1(cnn_face_detection_model)
 
 
 def _rect_to_css(rect):
@@ -259,9 +259,7 @@ if __name__ == '__main__':
     # 	help="path to Caffe 'deploy' prototxt file")
     # ap.add_argument("-m", "--model", required=True,
     # 	help="path to Caffe pre-trained model")
-    ap.add_argument("-c", "--confidence", type=float, default=0.2,
-                    help="minimum probability to filter weak detections")
-    args = vars(ap.parse_args())
+
 
     prototxt = "mobilenet_ssd/MobileNetSSD_deploy.prototxt"
     model = "mobilenet_ssd/MobileNetSSD_deploy.caffemodel"
@@ -300,8 +298,8 @@ if __name__ == '__main__':
             break
 
         frame = imutils.resize(frame, width=600)
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         rgb_small_frame = frame[:, :, ::-1]
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
 
         f_locations = face_locations(rgb_small_frame)
@@ -315,7 +313,7 @@ if __name__ == '__main__':
 
         net.setInput(blob)
         detections = net.forward()
-
+        print(type(detections))
 
 
         for face_encoding in f_encodings:
@@ -351,22 +349,22 @@ if __name__ == '__main__':
 
             # filter out weak detections by requiring a minimum
             # confidence
-            if confidence > args["confidence"]:
 
-                idx = int(detections[0, 0, i, 1])
-                label = CLASSES[idx]
 
-                if CLASSES[idx] != "person":
-                    continue
+            idx = int(detections[0, 0, i, 1])
+            label = CLASSES[idx]
 
-                box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
-                (startX, startY, endX, endY) = box.astype("int")
-                bb = (startX, startY, endX, endY)
+            if CLASSES[idx] != "person":
+                continue
 
-                cv2.rectangle(frame, (startX, startY), (endX, endY),
-                              (0, 255, 0), 2)
-                cv2.putText(frame, label, (startX, startY - 15),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 2)
+            box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
+            (startX, startY, endX, endY) = box.astype("int")
+            bb = (startX, startY, endX, endY)
+
+            cv2.rectangle(frame, (startX, startY), (endX, endY),
+                          (0, 255, 0), 2)
+            cv2.putText(frame, label, (startX, startY - 15),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 2)
 
 
         if writer is not None:
