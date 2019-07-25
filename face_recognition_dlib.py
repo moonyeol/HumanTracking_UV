@@ -393,3 +393,4 @@ if __name__ == '__main__':
     # do a bit of cleanup
     cv2.destroyAllWindows()
     vs.release()
+    cv2.threshold
