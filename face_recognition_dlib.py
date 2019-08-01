@@ -298,6 +298,7 @@ if __name__ == '__main__':
             break
 
         frame = imutils.resize(frame, width=600)
+        frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
         rgb_small_frame = frame[:, :, ::-1]
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 

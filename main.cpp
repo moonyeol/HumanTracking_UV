@@ -5,7 +5,6 @@
 #include <dlib/string.h>
 #include <dlib/image_io.h>
 #include <dlib/image_processing/frontal_face_detector.h>
-#include <dlib/a
 
 using namespace dlib;
 using namespace std;
@@ -40,17 +39,94 @@ using anet_type = loss_metric<fc_no_bias<128,avg_pool_everything<
         input_rgb_image_sized<150>
 >>>>>>>>>>>>;
 
-int main() {
+//std::tuple<double, double, double, double> _rect_to_css(dlib::rectangle rect){
+//    return std::make_tuple(rect.top(),rect.right(),rect.bottom(),rect.left());
+//}
+
+std::vector<matrix<rgb_pixel>> jitter_image(
+        const matrix<rgb_pixel>& img
+);
+
+
+
+int main() try{
     std::cout << "Hello, World!" << std::endl;
 
-    shape_predictor sp;
-    cnn_face_detector
     frontal_face_detector detector = get_frontal_face_detector();
+
+    shape_predictor sp;
     deserialize("models/shape_predictor_68_face_landmarks.dat") >> sp;
 
     anet_type net;
-    deserialize("dlib_face_recognition_resnet_model_v1.dat") >> net;
+    deserialize("models/dlib_face_recognition_resnet_model_v1.dat") >> net;
 
+    matrix<rgb_pixel> img;
+    load_image(img, "pic/user.jpg");
+    image_window win(img);
+
+    std::vector<matrix<rgb_pixel>> faces;
+
+    for (auto face : detector(img))
+    {
+        auto shape = sp(img, face);
+        matrix<rgb_pixel> face_chip;
+        extract_image_chip(img, get_face_chip_details(shape,150,0.25), face_chip);
+        faces.push_back(move(face_chip));
+        // Also put some boxes on the faces so we can see that the detector is finding
+        // them.
+        win.add_overlay(face);
+    }
+
+    if (faces.size() == 0)
+    {
+        cout << "No faces found in image!" << endl;
+        return 1;
+    }
+
+    std::vector<matrix<float,0,1>> face_descriptors = net(faces);
+
+    std::vector<sample_pair> edges;
+    for (size_t i = 0; i < face_descriptors.size(); ++i)
+    {
+        for (size_t j = i; j < face_descriptors.size(); ++j)
+        {
+            if (length(face_descriptors[i]-face_descriptors[j]) < 0.6)
+                edges.push_back(sample_pair(i,j));
+        }
+    }
+    std::vector<unsigned long> labels;
+    const auto num_clusters = chinese_whispers(edges, labels);
+    cout << "number of people found in the image: "<< num_clusters << endl;
+
+    std::vector<image_window> win_clusters(num_clusters);
+    for (size_t cluster_id = 0; cluster_id < num_clusters; ++cluster_id)
+    {
+        std::vector<matrix<rgb_pixel>> temp;
+        for (size_t j = 0; j < labels.size(); ++j)
+        {
+            if (cluster_id == labels[j])
+                temp.push_back(faces[j]);
+        }
+        win_clusters[cluster_id].set_title("face cluster " + cast_to_string(cluster_id));
+        win_clusters[cluster_id].set_image(tile_images(temp));
+    }
+    cout << "face descriptor for one face: " << trans(face_descriptors[0]) << endl;
+    matrix<float,0,1> face_descriptor = mean(mat(net(jitter_image(faces[0]))));
+    cout << "jittered face descriptor for one face: " << trans(face_descriptor) << endl;
+    cout << "hit enter to terminate" << endl;
+    cin.get();
 
     return 0;
+}catch (std::exception& e)
+{
+    cout << e.what() << endl;
+}
+std::vector<matrix<rgb_pixel>> jitter_image(const matrix<rgb_pixel>& img){
+    thread_local dlib::rand rnd;
+
+    std::vector<matrix<rgb_pixel>> crops;
+    for (int i = 0; i < 100; ++i)
+        crops.push_back(jitter_image(img,rnd));
+
+    return crops;
 }
