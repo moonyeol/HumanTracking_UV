@@ -1,10 +1,15 @@
 #include <iostream>
+#include <algorithm>
 #include <dlib/dnn.h>
 #include <dlib/gui_widgets.h>
 #include <dlib/clustering.h>
 #include <dlib/string.h>
 #include <dlib/image_io.h>
 #include <dlib/image_processing/frontal_face_detector.h>
+#include <dlib/image_processing/render_face_detections.h>
+#include <dlib/image_processing.h>
+#include <dlib/opencv.h>
+#include <opencv4/opencv2/highgui/highgui.hpp>
 
 using namespace dlib;
 using namespace std;
@@ -39,9 +44,17 @@ using anet_type = loss_metric<fc_no_bias<128,avg_pool_everything<
         input_rgb_image_sized<150>
 >>>>>>>>>>>>;
 
-//std::tuple<double, double, double, double> _rect_to_css(dlib::rectangle rect){
-//    return std::make_tuple(rect.top(),rect.right(),rect.bottom(),rect.left());
-//}
+std::tuple<long, long, long, long> _rect_to_css(dlib::rectangle rect){
+    return std::make_tuple(rect.left(),rect.top(),rect.right(),rect.bottom());
+}
+
+dlib::rectangle _css_to_rect(long left, long top, long right, long bottom){
+    return dlib::rectangle(left,top,right,bottom);
+}
+
+std::tuple<long, long, long, long> _trim_css_to_bounds(dlib::rectangle rect,cv::Mat img){
+    return std::make_tuple(max(rect.left(),(long)0), max(rect.top(),(long)0), min(rect.right(), img.get),min(rect.right(),img[0]));
+}
 
 std::vector<matrix<rgb_pixel>> jitter_image(
         const matrix<rgb_pixel>& img
@@ -130,3 +143,6 @@ std::vector<matrix<rgb_pixel>> jitter_image(const matrix<rgb_pixel>& img){
 
     return crops;
 }
+
+
+
