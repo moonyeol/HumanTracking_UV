@@ -28,7 +28,10 @@
 */
 
 #include <dlib/opencv.h>
-#include <opencv2/highgui/highgui.hpp>
+#include <opencv4/opencv2/highgui/highgui.hpp>
+#include <opencv4/opencv2/videoio.hpp>
+#include <opencv4/opencv2/imgproc.hpp>
+#include <opencv4/opencv2/objdetect.hpp>
 #include <dlib/image_processing/frontal_face_detector.h>
 #include <dlib/image_processing/render_face_detections.h>
 #include <dlib/image_processing.h>
@@ -40,14 +43,16 @@ using namespace std;
 
 int main()
 {
+    cv::Mat frame;
+    cv::VideoCapture cap;
+    cap.open(0); // 노트북 카메라는 cap.open(1) 또는 cap.open(-1)
+    // USB 카메라는 cap.open(0);
+    int x1;
+    int y1;
+    int x2;
+    int y2;
     try
     {
-        cv::VideoCapture cap(0);
-        if (!cap.isOpened())
-        {
-            cerr << "Unable to connect to camera" << endl;
-            return 1;
-        }
 
         image_window win;
 
@@ -57,33 +62,45 @@ int main()
         deserialize("shape_predictor_68_face_landmarks.dat") >> pose_model;
 
         // Grab and process frames until the main window is closed by the user.
-        while(!win.is_closed())
+        while(cap.isOpened())
         {
             // Grab a frame
-            cv::Mat temp;
-            if (!cap.read(temp))
-            {
-                break;
-            }
+            cap >> frame;
+//            if (!cap.read(frame))
+//            {
+//                break;
+//            }
             // Turn OpenCV's Mat into something dlib can deal with.  Note that this just
             // wraps the Mat object, it doesn't copy anything.  So cimg is only valid as
             // long as temp is valid.  Also don't do anything to temp that would cause it
             // to reallocate the memory which stores the image as that will make cimg
             // contain dangling pointers.  This basically means you shouldn't modify temp
             // while using cimg.
-            cv_image<bgr_pixel> cimg(temp);
+            cv_image<bgr_pixel> cimg(frame);
 
             // Detect faces
             std::vector<rectangle> faces = detector(cimg);
             // Find the pose of each face.
             std::vector<full_object_detection> shapes;
-            for (unsigned long i = 0; i < faces.size(); ++i)
-                shapes.push_back(pose_model(cimg, faces[i]));
+            for (unsigned long i = 0; i < faces.size(); ++i) {
+//                shapes.push_back(pose_model(cimg, faces[i]));
+                x1 = faces[i].left();
+                y1 = faces[i].top();
+                x2 = faces[i].right();
+                y2 = faces[i].bottom();
+                cv::rectangle(frame, CvPoint(x1,y1),CvPoint(x2,y2), cv::Scalar(0,255,0), (int)(frame.rows/150.0), 4);
+            }
 
             // Display it all on the screen
-            win.clear_overlay();
-            win.set_image(cimg);
-            win.add_overlay(render_face_detections(shapes));
+//            win.clear_overlay();
+//            win.set_image(cimg);
+//            win.add_overlay(render_face_detections(shapes));
+
+            cv::imshow("EXAMPLE02",frame);
+            if (cv::waitKey(30)==27)
+            {
+                break;
+            }
         }
     }
     catch(serialization_error& e)
@@ -97,5 +114,7 @@ int main()
     {
         cout << e.what() << endl;
     }
+    cv::destroyWindow("EXAMPLE02");
+    return 0;
 }
 
