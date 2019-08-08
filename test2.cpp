@@ -94,12 +94,17 @@ using anet_type = loss_metric<fc_no_bias<128,avg_pool_everything<
         >>>>>>>>>>>>;
 
 
+std::vector<String> getOutputsNames(const Net& net);
+
+
 int main()
 {
 
     try
     {
-        cv::Mat frame;
+        cv::Mat frame, blob;
+        std::vector<Mat> detection1;
+        std::vector<std::vector<Mat>> detection2;
         cv::VideoCapture cap;
         cap.open(0); // 노트북 카메라는 cap.open(1) 또는 cap.open(-1)
         // USB 카메라는 cap.open(0);
@@ -108,7 +113,6 @@ int main()
         int x2;
         int y2;
 
-        image_window win;
 
         // Load face detection and pose estimation models.
         frontal_face_detector detector = get_frontal_face_detector();
@@ -128,6 +132,7 @@ int main()
         while(getline(ifs,line))
             classes.push_back(line);
 
+
         Net net1 = readNetFromCaffe(prototxt, model);
 
         // Grab and process frames until the main window is closed by the user.
@@ -135,6 +140,73 @@ int main()
         {
             // Grab a frame
             cap >> frame;
+            resize(frame,frame, Size(600,600));
+            blob = blobFromImage(frame, 0.007843, Size(frame.size().width, frame.size().height), 127.5);
+            net1.setInput(blob);
+
+            Mat detection = net1.forward(); //여기가 문제
+
+
+            std::vector<int> classIds;
+            std::vector<float> confidences;
+            std::vector<Rect> boxes;
+
+                cout << "A.channels()= " << detection.channels() << endl;
+                cout << "A.rows, A.cols = " << detection.rows << ", " << detection.cols << endl << endl;
+                cout << "A = " << detection << endl << endl;
+
+            break;
+//여기밑에가 출력하는 부분
+//            for(size_t i = 0; i < detection.size(); i++){
+//                float* data = (float*)detection[i].data;
+//                for (int j = 0; j < detection[i].rows; ++j, data += detection[i].cols) {
+//                    Mat scores = detection[i].row(j).colRange(5, detection[i].cols);
+//                    Point classIdPoint;
+//                    double confidence;
+//                    // Get the value and location of the maximum score
+//                    minMaxLoc(scores, 0, &confidence, 0, &classIdPoint);
+//                    if (confidence > 0.5) {
+//                        int centerX = (int) (data[0] * frame.cols);
+//                        int centerY = (int) (data[1] * frame.rows);
+//                        int width = (int) (data[2] * frame.cols);
+//                        int height = (int) (data[3] * frame.rows);
+//                        int left = centerX - width / 2;
+//                        int top = centerY - height / 2;
+//
+//                        classIds.push_back(classIdPoint.x);
+//                        confidences.push_back((float) confidence);
+//                        boxes.push_back(Rect(left, top, width, height));
+//                    }
+//                }
+//            }
+//            std::vector<int> indices;
+//            NMSBoxes(boxes, confidences, 0.5, 0.4, indices);
+//            for (size_t i = 0; i < indices.size(); ++i)
+//            {
+//                int idx = indices[i];
+//                Rect box = boxes[idx];
+//
+//                cv::rectangle(frame, Point(box.x,box.y),Point(box.x+box.width, box.y+box.height), Scalar(0, 255, 0), 2);
+//                string label = format("%.2f", confidences[idx]);
+//                if (!classes.empty())
+//                {
+//                    CV_Assert(classIds[idx] < (int)classes.size());
+//                    label = classes[classIds[idx]] + ":" + label;
+//                }
+//                int baseLine;
+//                Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
+//                int top = max(box.y, labelSize.height);
+//                cv::rectangle(frame, Point(box.x, top - round(1.5*labelSize.height)), Point(box.x + round(1.5*labelSize.width), top + baseLine), Scalar(255, 255, 255), FILLED);
+//                putText(frame, label, Point(box.x, top), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0,0,0),1);
+//            }
+
+
+
+
+
+
+/*
+
 //            if (!cap.read(frame))
 //            {
 //                break;
@@ -171,7 +243,7 @@ int main()
 //            win.clear_overlay();
 //            win.set_image(cimg);
 //            win.add_overlay(render_face_detections(shapes));
-
+*/
             cv::imshow("EXAMPLE02",frame);
             if (cv::waitKey(30)==27)
             {
@@ -193,4 +265,22 @@ int main()
     cv::destroyWindow("EXAMPLE02");
     return 0;
 }
+// Get the names of the output layers
+std::vector<String> getOutputsNames(const Net& net)
+{
+    static std::vector<String> names;
+    if (names.empty())
+    {
+        //Get the indices of the output layers, i.e. the layers with unconnected outputs
+        std::vector<int> outLayers = net.getUnconnectedOutLayers();
 
+        //get the names of all the layers in the network
+        std::vector<String> layersNames = net.getLayerNames();
+
+        // Get the names of the output layers in names
+        names.resize(outLayers.size());
+        for (size_t i = 0; i < outLayers.size(); ++i)
+            names[i] = layersNames[outLayers[i] - 1];
+    }
+    return names;
+}

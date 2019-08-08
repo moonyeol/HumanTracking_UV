@@ -350,22 +350,22 @@ if __name__ == '__main__':
 
             # filter out weak detections by requiring a minimum
             # confidence
+            if confidence > 0.5:
 
+                idx = int(detections[0, 0, i, 1])
+                label = CLASSES[idx]
 
-            idx = int(detections[0, 0, i, 1])
-            label = CLASSES[idx]
+                if CLASSES[idx] != "person":
+                    continue
 
-            if CLASSES[idx] != "person":
-                continue
+                box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
+                (startX, startY, endX, endY) = box.astype("int")
+                bb = (startX, startY, endX, endY)
 
-            box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
-            (startX, startY, endX, endY) = box.astype("int")
-            bb = (startX, startY, endX, endY)
-
-            cv2.rectangle(frame, (startX, startY), (endX, endY),
-                          (0, 255, 0), 2)
-            cv2.putText(frame, label, (startX, startY - 15),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 2)
+                cv2.rectangle(frame, (startX, startY), (endX, endY),
+                              (0, 255, 0), 2)
+                cv2.putText(frame, label, (startX, startY - 15),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 2)
 
 
         if writer is not None:

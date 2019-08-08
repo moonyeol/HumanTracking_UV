@@ -78,7 +78,7 @@ vs = cv2.VideoCapture(0)
 writer = None
 
 # start the frames per second throughput estimator
-fps = FPS().start()
+# fps = FPS().start()
 
 # loop over frames from the video file stream
 while True:
@@ -109,7 +109,7 @@ while True:
 	# and predictions
 	net.setInput(blob)
 	detections = net.forward()
-
+	print(detections)
 	# loop over the detections
 	for i in np.arange(0, detections.shape[2]):
 		# extract the confidence (i.e., probability) associated
@@ -192,12 +192,12 @@ while True:
 		break
 
 	# update the FPS counter
-	fps.update()
-
-# stop the timer and display FPS information
-fps.stop()
-print("[INFO] elapsed time: {:.2f}".format(fps.elapsed()))
-print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
+# 	fps.update()
+#
+# # stop the timer and display FPS information
+# fps.stop()
+# print("[INFO] elapsed time: {:.2f}".format(fps.elapsed()))
+# print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
 
 # check to see if we need to release the video writer pointer
 if writer is not None:
