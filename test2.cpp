@@ -104,7 +104,7 @@ int main()
     {
         cv::Mat frame, blob;
         std::vector<Mat> detection1;
-        std::vector<std::vector<Mat>> detection2;
+        std::vector<std::vector<std::vector<Mat>>> detection2;
         cv::VideoCapture cap;
         cap.open(0); // 노트북 카메라는 cap.open(1) 또는 cap.open(-1)
         // USB 카메라는 cap.open(0);
@@ -141,7 +141,9 @@ int main()
             // Grab a frame
             cap >> frame;
             resize(frame,frame, Size(600,600));
-            blob = blobFromImage(frame, 0.007843, Size(frame.size().width, frame.size().height), 127.5);
+            double w = frame.cols;
+            double h = frame.rows;
+            blob = blobFromImage(frame, 0.007843, Size(frame.cols , frame.rows), 127.5);
             net1.setInput(blob);
 
             Mat detection = net1.forward(); //여기가 문제
@@ -150,14 +152,38 @@ int main()
             std::vector<int> classIds;
             std::vector<float> confidences;
             std::vector<Rect> boxes;
+//            for(size_t i=0; detection.size.p.size.p; i++) {
+                cout << "A.channels()= " << detection.at<float>(Vec<int,4>(0,0,0,0)) << endl;
+//                cout << "A.rows, A.cols = " << detection[0][0][i].rows << ", " << detection[0][0][i].cols << endl << endl;
+//                cout << "A = " << detection[0][0][i] << endl << endl;
+//            }
+                cout << "size " <<detection.size.p[2]<<endl;
+            cout << "size2 " <<detection.size.p[3]<<endl;
+            for(int i =0; i < detection.size.p[2]; i++){
+                float confidence = detection.at<float>(Vec<int,4>(0,0,i,2));
+                    cout << confidence << endl;
+                    if(confidence > 0.5){
+                        int idx = detection.at<float>(Vec<int,4>(0,0,i,1));
+                        String label = classes[idx];
+                        cout << "test" << endl;
+                        if(label.compare("person"))
+                            continue;
+                int startX = (int) (detection.at<float>(Vec<int,4>(0,0,i,3)) * frame.cols);
+                int startY = (int) (detection.at<float>(Vec<int,4>(0,0,i,4)) * frame.rows);
+                int endX = (int) (detection.at<float>(Vec<int,4>(0,0,i,5)) * frame.cols);
+                int endY = (int) (detection.at<float>(Vec<int,4>(0,0,i,6)) * frame.rows);
+                        cout << "startX" << startX <<endl;
+                        cout << "startY" << startY <<endl;
+                        cout << "endX" << endX <<endl;
+                        cout << "endY" << endY <<endl;
+                        cv::rectangle(frame, Point(startX,startY), Point(endX,endY),Scalar(0, 255, 0),2);
+                        putText(frame, label, Point(startX, startY-15), FONT_HERSHEY_SIMPLEX, 0.45, Scalar(0,255,0),2);
+                    }
+            }
 
-                cout << "A.channels()= " << detection.channels() << endl;
-                cout << "A.rows, A.cols = " << detection.rows << ", " << detection.cols << endl << endl;
-                cout << "A = " << detection << endl << endl;
 
-            break;
-//여기밑에가 출력하는 부분
-//            for(size_t i = 0; i < detection.size(); i++){
+
+//           for(size_t i = 0; i < detection.size.p[2]; i++){
 //                float* data = (float*)detection[i].data;
 //                for (int j = 0; j < detection[i].rows; ++j, data += detection[i].cols) {
 //                    Mat scores = detection[i].row(j).colRange(5, detection[i].cols);
