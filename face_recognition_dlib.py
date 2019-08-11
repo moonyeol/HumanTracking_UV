@@ -18,7 +18,6 @@ face_recognition_model = "models/dlib_face_recognition_resnet_model_v1.dat"
 cnn_face_detection_model = "models/mmod_human_face_detector.dat"
 
 
-detector = dlib.get_frontal_face_detector()
 
 pose_predictor_68_point = dlib.shape_predictor(predictor_68_point_model)
 pose_predictor_5_point = dlib.shape_predictor(predictor_5_point_model)

@@ -97,12 +97,18 @@ using anet_type = loss_metric<fc_no_bias<128,avg_pool_everything<
 std::vector<String> getOutputsNames(const Net& net);
 
 
+
+
+
+
+
+
 int main()
 {
 
     try
     {
-        cv::Mat frame, blob;
+        Mat frame, blob;
         std::vector<Mat> detection1;
         std::vector<std::vector<std::vector<Mat>>> detection2;
         cv::VideoCapture cap;
@@ -120,8 +126,31 @@ int main()
         deserialize("shape_predictor_68_face_landmarks.dat") >> pose_model;
 
 
+      //face recoginition 구현 중
+        std::vector<matrix<rgb_pixel>> face_locations;
+        Mat user_img = imread("user.jpg");
+        for (auto face : detector(user_img)){
+            auto shape = pose_model(user_img, face);
+            matrix<rgb_pixel> face_chip;
+            extract_image_chip(user_img, get_face_chip_details(shape,150,0.25), face_chip);
+            face_locations.push_back(move(face_chip));
+            // Also put some boxes on the faces so we can see that the detector is finding
+            // them.
+        }
+        if (face_locations.size() == 0)
+        {
+            cout << "No faces found in image!" << endl;
+            return 1;
+        }
+
+
         anet_type net;
         deserialize("models/dlib_face_recognition_resnet_model_v1.dat") >> net;
+
+중       //까
+
+
+
 
         String prototxt = "mobilenet_ssd/MobileNetSSD_deploy.prototxt";
         String model = "mobilenet_ssd/MobileNetSSD_deploy.caffemodel";
@@ -146,7 +175,7 @@ int main()
             blob = blobFromImage(frame, 0.007843, Size(frame.cols , frame.rows), 127.5);
             net1.setInput(blob);
 
-            Mat detection = net1.forward(); //여기가 문제
+            Mat detection = net1.forward();
 
 
             std::vector<int> classIds;
