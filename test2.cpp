@@ -1,3 +1,17 @@
+//https://github.com/davisking/dlib/blob/master/tools/python/src/face_recognition.cpp
+//http://dlib.net/dnn_face_recognition_ex.cpp.html
+//기존 face_recognition_dlib
+//위 3개 참고
+
+
+
+
+
+
+
+
+
+
 // The contents of this file are in the public domain. See LICENSE_FOR_EXAMPLE_PROGRAMS.txt
 /*
 
@@ -50,6 +64,9 @@
 #include <dlib/image_io.h>
 #include <dlib/gui_widgets.h>
 #include <dlib/dnn.h>
+#include <dlib/image_transforms.h>
+#include <dlib/geometry/vector.h>
+#include <dlib/matrix.h>
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
@@ -98,6 +115,185 @@ std::vector<String> getOutputsNames(const Net& net);
 
 
 
+//
+//class face_recognition_model_v1
+//{
+//
+//public:
+//
+//    face_recognition_model_v1(const std::string& model_filename)
+//    {
+//        deserialize(model_filename) >> net;
+//    }
+//
+//    matrix<double,0,1> compute_face_descriptor (
+//            matrix<rgb_pixel> img,
+//            const full_object_detection& face,
+//            const int num_jitters,
+//            float padding = 0.25
+//    )
+//    {
+//        std::vector<full_object_detection> faces(1, face);
+//        return compute_face_descriptors(img, faces, num_jitters, padding)[0];
+//    }
+//
+//    matrix<double,0,1> compute_face_descriptor_from_aligned_image (
+//            matrix<rgb_pixel> img,
+//            const int num_jitters
+//    )
+//    {
+//        std::vector<matrix<rgb_pixel>> images{img};
+//        return batch_compute_face_descriptors_from_aligned_images(images, num_jitters)[0];
+//    }
+//
+//    std::vector<matrix<double,0,1>> compute_face_descriptors (
+//            matrix<rgb_pixel> img,
+//            const std::vector<full_object_detection>& faces,
+//            const int num_jitters,
+//            float padding = 0.25
+//    )
+//    {
+//        std::vector<matrix<rgb_pixel>> batch_img(1, img);
+//        std::vector<std::vector<full_object_detection>> batch_faces(1, faces);
+//        return batch_compute_face_descriptors(batch_img, batch_faces, num_jitters, padding)[0];
+//    }
+//
+//    std::vector<std::vector<matrix<double,0,1>>> batch_compute_face_descriptors (
+//            const std::vector<matrix<rgb_pixel>>& batch_imgs,
+//    const std::vector<std::vector<full_object_detection>>& batch_faces,
+//    const int num_jitters,
+//    float padding = 0.25
+//    )
+//    {
+//
+//        if (batch_imgs.size() != batch_faces.size())
+//            throw dlib::error("The array of images and the array of array of locations must be of the same size");
+//
+//        int total_chips = 0;
+//        for (const auto& faces : batch_faces)
+//        {
+//            total_chips += faces.size();
+//            for (const auto& f : faces)
+//            {
+//                if (f.num_parts() != 68 && f.num_parts() != 5)
+//                    throw dlib::error("The full_object_detection must use the iBUG 300W 68 point face landmark style or dlib's 5 point style.");
+//            }
+//        }
+//
+//
+//        dlib::array<matrix<rgb_pixel>> face_chips;
+//        for (int i = 0; i < batch_imgs.size(); ++i)
+//        {
+//            auto& faces = batch_faces[i];
+//            auto& img = batch_imgs[i];
+//
+//            std::vector<chip_details> dets;
+//            for (const auto& f : faces)
+//                dets.push_back(get_face_chip_details(f, 150, padding));
+//            dlib::array<matrix<rgb_pixel>> this_img_face_chips;
+//            extract_image_chips(img, dets, this_img_face_chips);
+//
+//            for (auto& chip : this_img_face_chips)
+//                face_chips.push_back(chip);
+//        }
+//
+//        std::vector<std::vector<matrix<double,0,1>>> face_descriptors(batch_imgs.size());
+//        if (num_jitters <= 1)
+//        {
+//            // extract descriptors and convert from float vectors to double vectors
+//            auto descriptors = net(face_chips, 16);
+//            auto next = std::begin(descriptors);
+//            for (int i = 0; i < batch_faces.size(); ++i)
+//            {
+//                for (int j = 0; j < batch_faces[i].size(); ++j)
+//                {
+//                    face_descriptors[i].push_back(matrix_cast<double>(*next++));
+//                }
+//            }
+//            DLIB_ASSERT(next == std::end(descriptors));
+//        }
+//        else
+//        {
+//            // extract descriptors and convert from float vectors to double vectors
+//            auto fimg = std::begin(face_chips);
+//            for (int i = 0; i < batch_faces.size(); ++i)
+//            {
+//                for (int j = 0; j < batch_faces[i].size(); ++j)
+//                {
+//                    auto& r = mean(mat(net(jitter_image(*fimg++, num_jitters), 16)));
+//                    face_descriptors[i].push_back(matrix_cast<double>(r));
+//                }
+//            }
+//            DLIB_ASSERT(fimg == std::end(face_chips));
+//        }
+//
+//        return face_descriptors;
+//    }
+//
+//    std::vector<matrix<double,0,1>> batch_compute_face_descriptors_from_aligned_images (
+//            const std::vector<matrix<rgb_pixel>>& batch_imgs,
+//    const int num_jitters
+//    )
+//    {
+//        dlib::array<matrix<rgb_pixel>> face_chips;
+//        for (auto& img : batch_imgs) {
+//
+//            matrix<rgb_pixel> image;
+//
+//                assign_image(image, matrix<rgb_pixel>(img));
+//
+//
+//            // Check for the size of the image
+//            if ((image.nr() != 150) || (image.nc() != 150)) {
+//                throw dlib::error("Unsupported image size, it should be of size 150x150. Also cropping must be done as `dlib.get_face_chip` would do it. \
+//                That is, centered and scaled essentially the same way.");
+//            }
+//
+//            face_chips.push_back(image);
+//        }
+//
+//        std::vector<matrix<double,0,1>> face_descriptors;
+//        if (num_jitters <= 1)
+//        {
+//            // extract descriptors and convert from float vectors to double vectors
+//            auto descriptors = net(face_chips, 16);
+//
+//            for (auto& des: descriptors) {
+//                face_descriptors.push_back(matrix_cast<double>(des));
+//            }
+//        }
+//        else
+//        {
+//            // extract descriptors and convert from float vectors to double vectors
+//            for (auto& fimg : face_chips) {
+//                auto& r = mean(mat(net(jitter_image(fimg, num_jitters), 16)));
+//                face_descriptors.push_back(matrix_cast<double>(r));
+//            }
+//        }
+//        return face_descriptors;
+//    }
+//
+//private:
+//
+//    dlib::rand rnd;
+//
+//    std::vector<matrix<rgb_pixel>> jitter_image(
+//            const matrix<rgb_pixel>& img,
+//            const int num_jitters
+//    )
+//    {
+//        std::vector<matrix<rgb_pixel>> crops;
+//        for (int i = 0; i < num_jitters; ++i)
+//            crops.push_back(dlib::jitter_image(img,rnd));
+//        return crops;
+//    }
+//
+//};
+
+
+
+
+
 
 
 
@@ -125,8 +321,11 @@ int main()
         shape_predictor pose_model;
         deserialize("shape_predictor_68_face_landmarks.dat") >> pose_model;
 
+        anet_type net;
+        deserialize("models/dlib_face_recognition_resnet_model_v1.dat") >> net;
 
       //face recoginition 구현 중
+        dlib::array<matrix<rgb_pixel>> face_chips;
         std::vector<matrix<rgb_pixel>> face_locations;
         Mat user_img = imread("user.jpg");
         for (auto face : detector(user_img)){
@@ -144,11 +343,12 @@ int main()
         }
 
 
-        anet_type net;
-        deserialize("models/dlib_face_recognition_resnet_model_v1.dat") >> net;
 
-중       //까
 
+
+        std::vector<matrix<float,0,1>> face_descriptors = net(face_locations);
+
+        auto face_encoding = face_descriptors[0];
 
 
 
@@ -165,8 +365,7 @@ int main()
         Net net1 = readNetFromCaffe(prototxt, model);
 
         // Grab and process frames until the main window is closed by the user.
-        while(cap.isOpened())
-        {
+        while(cap.isOpened()){
             // Grab a frame
             cap >> frame;
             resize(frame,frame, Size(600,600));
@@ -191,7 +390,7 @@ int main()
             for(int i =0; i < detection.size.p[2]; i++){
                 float confidence = detection.at<float>(Vec<int,4>(0,0,i,2));
                     cout << confidence << endl;
-                    if(confidence > 0.5){
+                    if(confidence > 0.6){
                         int idx = detection.at<float>(Vec<int,4>(0,0,i,1));
                         String label = classes[idx];
                         cout << "test" << endl;
@@ -209,6 +408,58 @@ int main()
                         putText(frame, label, Point(startX, startY-15), FONT_HERSHEY_SIMPLEX, 0.45, Scalar(0,255,0),2);
                     }
             }
+
+
+
+
+
+
+            //face recoginition 구현 중
+            dlib::array<matrix<rgb_pixel>> face_chips1;
+            std::vector<matrix<rgb_pixel>> face_locations1;
+            auto locations = detector(frame);
+            for (auto face : locations){
+                auto shape = pose_model(frame, face);
+                matrix<rgb_pixel> face_chip;
+                extract_image_chip(frame, get_face_chip_details(shape,150,0.25), face_chip);
+                face_locations1.push_back(move(face_chip));
+                // Also put some boxes on the faces so we can see that the detector is finding
+                // them.
+            }
+
+
+
+
+
+            std::vector<matrix<float,0,1>> face_descriptors1 = net(face_locations1);
+
+            std::vector<String> f_names;
+
+            for(auto f : face_descriptors1){
+                auto distance = face_encoding - f;
+                auto min_value = min(distance);
+                String name = "Unknown";
+                if(min_value < 0.6){
+                    name = "User";
+                }
+                f_names.push_back(name);
+            }
+
+            for(int i =0; i < locations.size(); i++){
+                cv::rectangle(frame, Point(locations[i].left(),locations[i].top()), Point(locations[i].right(),locations[i].bottom()),Scalar(0, 255, 0),2);
+                putText(frame, f_names[i], Point(locations[i].left() +6, locations[i].top()-6), FONT_HERSHEY_DUPLEX, 1.0, Scalar(255,255,255),2);
+
+            }
+
+
+
+
+
+
+
+
+
+
 
 
 
