@@ -4,14 +4,6 @@
 //위 3개 참고
 
 
-
-
-
-
-
-
-
-
 // The contents of this file are in the public domain. See LICENSE_FOR_EXAMPLE_PROGRAMS.txt
 /*
 
@@ -292,45 +284,80 @@ std::vector<String> getOutputsNames(const Net& net);
 
 
 
-
-
-
-
-
-
-
 int main()
 {
-
+    // TRY BLOCK CODE START
     try
     {
-        Mat frame, blob;
-        std::vector<Mat> detection1;
-        std::vector<std::vector<std::vector<Mat>>> detection2;
+        cv::Mat frame, blob;
+        
+        // CREATE VECTOR OBJECT CALLED "detection1" WHICH CAN CONTAIN LIST OF MAT OBJECTS.
+        /*
+            >> `std::vector< std::vector< std::vector<Mat> > >`: Creates 3D vector array containing Mat data-type.
+        */
+        std::vector<cv::Mat> detection1;
+        std::vector<std::vector<std::vector<cv::Mat>>> detection2;
         cv::VideoCapture cap;
-        cap.open(0); // 노트북 카메라는 cap.open(1) 또는 cap.open(-1)
-        // USB 카메라는 cap.open(0);
+        
+        // OPEN DEFAULT CAMERA OF `/dev/video0` WHERE ITS INTEGER IS FROM THE BACK.
+        cap.open(0);
         int x1;
         int y1;
         int x2;
         int y2;
 
 
-        // Load face detection and pose estimation models.
-        frontal_face_detector detector = get_frontal_face_detector();
-        shape_predictor pose_model;
-        deserialize("shape_predictor_68_face_landmarks.dat") >> pose_model;
+        // DECLARE A FRONTAL FACE DETECTOR (HOG BASED) TO A VARIABLE "detector". 
+        /*
+            >> `dlib::get_frontal_face_detector()`: return "dlib::rectangles" object upon detecting a frontal face.
+                ...and to assign the detector as a variable needs data-type which is `dlib::frontal_face_detector`.
+                ...Python didn't needed this data-type since variable in Python does not need to data-type designation.
+        */
+        dlib::frontal_face_detector detector = dlib::get_frontal_face_detector();
+        
+        // FACIAL LANDMARK DETECTION
+        /*
+            >> `dlib::shape_predictor`: returns set of point locations that define the pose of the object.
 
+            >> `dlib::deserialize()`  : recover data saved in serialized back to its original format with deserialization.
+                ...the operator `>>` imports the file of model to the "dlib::shape_predictor" object.
+
+            >> `shape_predictor_68_face_landmarks.dat`: a file containing a model of pin-pointing 68 facial landmark.
+                ...data is saved in serialized format which can be stored, transmitted and reconstructed (deserialization) later.
+                ...얼굴 랜드마크 데이터 파일 "shape_predictor_68_face_landmarks.dat"의 라이선스는 함부로 상업적 이용을 금합니다.
+                ...본 파일을 상업적 용도로 사용하기 위해서는 반드시 Imperial College London에 연락하기 바랍니다.
+        */
+        dlib::shape_predictor pose_model;
+        dlib::deserialize("shape_predictor_68_face_landmarks.dat") >> pose_model;
+
+        // ASSIGN VARIABLE "net" AS AN OBJECT OF "anet_type" DEFINED ABOVE.
+        /*
+            >> `models/dlib_face_recognition_resnet_model_v1.dat`: DNN for a facial recognition.
+                ...it is presume this file too needs deserialization which reconstructs to original data format.
+                ...for more information of a serialization, read this webpage; https://www.geeksforgeeks.org/serialization-in-java/.
+        */
         anet_type net;
         deserialize("models/dlib_face_recognition_resnet_model_v1.dat") >> net;
 
-      //face recoginition 구현 중
-        dlib::array<matrix<rgb_pixel>> face_chips;
-        std::vector<matrix<rgb_pixel>> face_locations;
-        Mat user_img = imread("user.jpg");
+        //face recoginition 구현 중
+        /*
+            >> `dlib::array`    :
+            >> `dlib::matrix`   :
+            >> `dlib::rgb_pixle`:
+        */
+        dlib::array<dlib::matrix<dlib::rgb_pixel>> face_chips;
+        
+        //
+        /*
+            >> `std::vector`: similar to `std::array` but stores data in heap (thus, always calls `new`) and is resizable.
+                ...Hence, for a big amount of data, it is recommended to use `std::vector` than `std::array`.
+        */
+        std::vector<dlib::matrix<dlib::rgb_pixel>> face_locations;
+        
+        cv::Mat user_img = imread("user.jpg");
         for (auto face : detector(user_img)){
             auto shape = pose_model(user_img, face);
-            matrix<rgb_pixel> face_chip;
+            dlib::matrix<dlib::rgb_pixel> face_chip;
             extract_image_chip(user_img, get_face_chip_details(shape,150,0.25), face_chip);
             face_locations.push_back(move(face_chip));
             // Also put some boxes on the faces so we can see that the detector is finding
@@ -342,49 +369,75 @@ int main()
             return 1;
         }
 
-
-
-
-
+        
         std::vector<matrix<float,0,1>> face_descriptors = net(face_locations);
 
         auto face_encoding = face_descriptors[0];
 
+        // PROTOTXT AND CAFFEMODEL IS A COUNTERPART OF CONFIG AND WEIGHT IN DARKNET.
+        cv::String prototxt = "mobilenet_ssd/MobileNetSSD_deploy.prototxt";
+        cv::String model = "mobilenet_ssd/MobileNetSSD_deploy.caffemodel";
+        
+        // ACQUIRE LIST OF CLASSES.
+        /*
+            >> `cv::String::c_str()`: also available as "std::string::c_str()";
+                ...returns array with strings splitted on NULL (blank space, new line). 
+            
+            >> `cv::vector::push_back(<data>)`: push the data at the back end of the current last element.
+                ...just like a push-back of the stack data structure.
 
-
-        String prototxt = "mobilenet_ssd/MobileNetSSD_deploy.prototxt";
-        String model = "mobilenet_ssd/MobileNetSSD_deploy.caffemodel";
+                    Hence, the name of the classes are all stored in variable "classes".
+        */
         String classesFile = "names";
-        ifstream ifs(classesFile.c_str());
-        string line;
-        std::vector<string> classes;
+        std::ifstream ifs(classesFile.c_str());
+        std::string line;
+        std::vector<std::string> classes;
         while(getline(ifs,line))
             classes.push_back(line);
 
-
+        // IMPORT CAFFE CONFIG AND MODEL TO THE NEURAL NETWORK.
         Net net1 = readNetFromCaffe(prototxt, model);
 
         // Grab and process frames until the main window is closed by the user.
         while(cap.isOpened()){
-            // Grab a frame
+            // VIDEOCAPTURE "CAPTURE" RETURN ITS FRAME TO MAT "FRAME" IN 600x600 PIXEL.
             cap >> frame;
             resize(frame,frame, Size(600,600));
+            
             double w = frame.cols;
             double h = frame.rows;
-            blob = blobFromImage(frame, 0.007843, Size(frame.cols , frame.rows), 127.5);
+            
+            // CONVERT FRAME TO PREPROCESSED "BLOB" FOR MODEL PREDICTION.
+            /*
+                >> `blobFromImage(<input>, <output>, <scalefactor>, <size>, <mean>, <swapRB>, <crop>, <ddepth>)`
+                    ...scalefactor of (1/255) would normalize RGB value from (0~255) to (0~1).
+                    ...cv::Size(224,224): advise to resize the output blob to 224x224 (GoogLeNet) to be passed through the model.
+            */
+            blob = blobFromImage(frame, 0.007843, cv::Size(frame.cols , frame.rows), 127.5);
             net1.setInput(blob);
 
-            Mat detection = net1.forward();
+            // RUN FORWARD PASS FOR THE WHOLE NETWORK: forward() [1/4]
+            /*
+                >> Return cv::Mat type outputBlobs variable "detection".
+                    ...inside is a blob for first output of specified layer.
+            */
+            cv::Mat detection = net1.forward();
 
 
             std::vector<int> classIds;
             std::vector<float> confidences;
             std::vector<Rect> boxes;
-//            for(size_t i=0; detection.size.p.size.p; i++) {
+            // for(size_t i=0; detection.size.p.size.p; i++) {
+            
+                //
+                /*
+                    >> `cv::Vec4i::Vec(<int>,<int>,<int>,<int>)`: 
+                    >> `cv::Mat::at()`: 
+                */
                 cout << "A.channels()= " << detection.at<float>(Vec<int,4>(0,0,0,0)) << endl;
-//                cout << "A.rows, A.cols = " << detection[0][0][i].rows << ", " << detection[0][0][i].cols << endl << endl;
-//                cout << "A = " << detection[0][0][i] << endl << endl;
-//            }
+                // cout << "A.rows, A.cols = " << detection[0][0][i].rows << ", " << detection[0][0][i].cols << endl << endl;
+                // cout << "A = " << detection[0][0][i] << endl << endl;
+                // }
                 cout << "size " <<detection.size.p[2]<<endl;
             cout << "size2 " <<detection.size.p[3]<<endl;
             for(int i =0; i < detection.size.p[2]; i++){
@@ -428,39 +481,33 @@ int main()
             }
 
 
+            //
+            /*
+                >> `dlib::matrix<datatype, 0L, 1L>`: 0L and 1L is a size of column and row of matrix.
+                    ...dlib::matrix<float, 0, 1> means it's a column vector which will be sized on runtime.
 
+                >> Variable "f_names": 
+            */
+            std::vector<dlib::matrix<float,0,1>> face_descriptors1 = net(face_locations1);
+            std::vector<cv::String> f_names;
 
-
-            std::vector<matrix<float,0,1>> face_descriptors1 = net(face_locations1);
-
-            std::vector<String> f_names;
-
+            //
             for(auto f : face_descriptors1){
                 auto distance = face_encoding - f;
                 auto min_value = min(distance);
-                String name = "Unknown";
+                cv::String name = "Unknown";
                 if(min_value < 0.6){
                     name = "User";
                 }
                 f_names.push_back(name);
             }
-
+            
+            // DRAW RECTANGLE AROUND THE DETECTED OBJECT AND SHOW TEXT OF WHAT CLASS IT IS.
             for(int i =0; i < locations.size(); i++){
                 cv::rectangle(frame, Point(locations[i].left(),locations[i].top()), Point(locations[i].right(),locations[i].bottom()),Scalar(0, 255, 0),2);
                 putText(frame, f_names[i], Point(locations[i].left() +6, locations[i].top()-6), FONT_HERSHEY_DUPLEX, 1.0, Scalar(255,255,255),2);
 
             }
-
-
-
-
-
-
-
-
-
-
-
 
 
 //           for(size_t i = 0; i < detection.size.p[2]; i++){
@@ -550,13 +597,17 @@ int main()
 //            win.set_image(cimg);
 //            win.add_overlay(render_face_detections(shapes));
 */
+            
+            // SHOW CAPTURED VIDEO.
             cv::imshow("EXAMPLE02",frame);
             if (cv::waitKey(30)==27)
             {
                 break;
             }
-        }
-    }
+        }   // END OF WHILE LOOP
+    }   // END OF TRY BLOCK
+    
+    // EXCEPTION 1: NO LANDMARKING MODEL DETECTED.
     catch(serialization_error& e)
     {
         cout << "You need dlib's default face landmarking model file to run this example." << endl;
@@ -564,13 +615,20 @@ int main()
         cout << "   http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2" << endl;
         cout << endl << e.what() << endl;
     }
+    
+    // EXCEPTION 2
     catch(exception& e)
     {
         cout << e.what() << endl;
     }
+    
+    // DESTROY WINDOWS UPON END OF EXECUTION.
     cv::destroyWindow("EXAMPLE02");
     return 0;
 }
+
+
+
 // Get the names of the output layers
 std::vector<String> getOutputsNames(const Net& net)
 {
