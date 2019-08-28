@@ -2,7 +2,10 @@
 //http://dlib.net/dnn_face_recognition_ex.cpp.html
 //기존 face_recognition_dlib
 //위 3개 참고
-
+//
+//컴파일 방법
+//g++ -std=c++11 -O3 -I.. /home/e-on/dlib/dlib/dlib/all/source.cpp -lpthread -lX11 -ljpeg -DDLIB_JPEG_SUPPORT -o test2 test2.cpp $(pkg-config opencv4 --libs --cflags)
+//
 
 
 
@@ -55,6 +58,7 @@
 #include <opencv4/opencv2/dnn/layer.hpp>
 #include <opencv4/opencv2/dnn/dnn.inl.hpp>
 #include <opencv4/opencv2/dnn/dnn.hpp>
+#include <dlib/opencv/cv_image.h>
 #include <dlib/opencv.h>
 #include <dlib/image_processing/frontal_face_detector.h>
 #include <dlib/image_processing/render_face_detections.h>
@@ -111,7 +115,8 @@ using anet_type = loss_metric<fc_no_bias<128,avg_pool_everything<
         >>>>>>>>>>>>;
 
 
-std::vector<String> getOutputsNames(const Net& net);
+
+
 
 
 
@@ -314,41 +319,54 @@ int main()
         int y1;
         int x2;
         int y2;
-
+        bool found = false;
 
         // Load face detection and pose estimation models.
         frontal_face_detector detector = get_frontal_face_detector();
         shape_predictor pose_model;
-        deserialize("shape_predictor_68_face_landmarks.dat") >> pose_model;
+        deserialize("shape_predictor_5_face_landmarks.dat") >> pose_model;
 
+//        face_recognition_model_v1 face_encoder =  face_recognition_model_v1("models/dlib_face_recognition_resnet_model_v1.dat");
         anet_type net;
         deserialize("models/dlib_face_recognition_resnet_model_v1.dat") >> net;
 
       //face recoginition 구현 중
-        dlib::array<matrix<rgb_pixel>> face_chips;
-        std::vector<matrix<rgb_pixel>> face_locations;
-        Mat user_img = imread("user.jpg");
-        for (auto face : detector(user_img)){
+
+        matrix<rgb_pixel> user_img;
+        load_image(user_img, "user.jpg");
+
+        dlib::array<matrix<rgb_pixel>> faces;
+        for (auto face : detector(user_img)) {
             auto shape = pose_model(user_img, face);
             matrix<rgb_pixel> face_chip;
             extract_image_chip(user_img, get_face_chip_details(shape,150,0.25), face_chip);
-            face_locations.push_back(move(face_chip));
-            // Also put some boxes on the faces so we can see that the detector is finding
-            // them.
+            faces.push_back(move(face_chip));
         }
-        if (face_locations.size() == 0)
-        {
-            cout << "No faces found in image!" << endl;
-            return 1;
-        }
+        std::vector<matrix<float,0,1>> face_descriptors = net(faces,16);
+
+
+
+//        for (auto face : detector(user_img)){
+//            auto shape = pose_model(user_img, face);
+//            matrix<rgb_pixel> face_chip;
+//            extract_image_chip(user_img, get_face_chip_details(shape,150,0.25), face_chip);
+//            face_locations.push_back(move(face_chip));
+//            // Also put some boxes on the faces so we can see that the detector is finding
+//            // them.
+//        }
+//        if (face_locations.size() == 0)
+//        {
+//            cout << "No faces found in image!" << endl;
+//            return 1;
+//        }
 
 
 
 
 
-        std::vector<matrix<float,0,1>> face_descriptors = net(face_locations);
+//        std::vector<matrix<float,0,1>> face_descriptors = net(face_locations);
 
-        auto face_encoding = face_descriptors[0];
+//        auto face_encoding = face_descriptors[0];
 
 
 
@@ -376,34 +394,36 @@ int main()
 
             Mat detection = net1.forward();
 
-
+            found =true;
             std::vector<int> classIds;
             std::vector<float> confidences;
             std::vector<Rect> boxes;
 //            for(size_t i=0; detection.size.p.size.p; i++) {
-                cout << "A.channels()= " << detection.at<float>(Vec<int,4>(0,0,0,0)) << endl;
+//                cout << "A.channels()= " << detection.at<float>(Vec<int,4>(0,0,0,0)) << endl;
 //                cout << "A.rows, A.cols = " << detection[0][0][i].rows << ", " << detection[0][0][i].cols << endl << endl;
 //                cout << "A = " << detection[0][0][i] << endl << endl;
 //            }
-                cout << "size " <<detection.size.p[2]<<endl;
-            cout << "size2 " <<detection.size.p[3]<<endl;
+//                cout << "size " <<detection.size.p[2]<<endl;
+//            cout << "size2 " <<detection.size.p[3]<<endl;
             for(int i =0; i < detection.size.p[2]; i++){
                 float confidence = detection.at<float>(Vec<int,4>(0,0,i,2));
-                    cout << confidence << endl;
-                    if(confidence > 0.6){
-                        int idx = detection.at<float>(Vec<int,4>(0,0,i,1));
+//                    cout << confidence << endl;
+                    if(confidence > 0.6) {
+                        int idx = detection.at<float>(Vec<int, 4>(0, 0, i, 1));
                         String label = classes[idx];
-                        cout << "test" << endl;
-                        if(label.compare("person"))
-                            continue;
+//                        cout << "test" << endl;
+                        if (label.compare("person")) {
+                            found =false;
+                        continue;
+                    }
                 int startX = (int) (detection.at<float>(Vec<int,4>(0,0,i,3)) * frame.cols);
                 int startY = (int) (detection.at<float>(Vec<int,4>(0,0,i,4)) * frame.rows);
                 int endX = (int) (detection.at<float>(Vec<int,4>(0,0,i,5)) * frame.cols);
                 int endY = (int) (detection.at<float>(Vec<int,4>(0,0,i,6)) * frame.rows);
-                        cout << "startX" << startX <<endl;
-                        cout << "startY" << startY <<endl;
-                        cout << "endX" << endX <<endl;
-                        cout << "endY" << endY <<endl;
+//                        cout << "startX" << startX <<endl;
+//                        cout << "startY" << startY <<endl;
+//                        cout << "endX" << endX <<endl;
+//                        cout << "endY" << endY <<endl;
                         cv::rectangle(frame, Point(startX,startY), Point(endX,endY),Scalar(0, 255, 0),2);
                         putText(frame, label, Point(startX, startY-15), FONT_HERSHEY_SIMPLEX, 0.45, Scalar(0,255,0),2);
                     }
@@ -415,41 +435,88 @@ int main()
 
 
             //face recoginition 구현 중
-            dlib::array<matrix<rgb_pixel>> face_chips1;
-            std::vector<matrix<rgb_pixel>> face_locations1;
-            auto locations = detector(frame);
-            for (auto face : locations){
-                auto shape = pose_model(frame, face);
-                matrix<rgb_pixel> face_chip;
-                extract_image_chip(frame, get_face_chip_details(shape,150,0.25), face_chip);
-                face_locations1.push_back(move(face_chip));
+            if(found) {
+                array2d<bgr_pixel> img;
+                dlib::assign_image(img, dlib::cv_image<rgb_pixel>(frame));
+
+                dlib::array<matrix<rgb_pixel>> faces2;
+                auto locations = detector(img);
+                for (auto face : locations) {
+                    auto shape = pose_model(img, face);
+                    matrix<rgb_pixel> face_chip;
+                    extract_image_chip(img, get_face_chip_details(shape, 150, 0.25), face_chip);
+                    faces2.push_back(move(face_chip));
+                }
+                std::vector<matrix<float, 0, 1>> face_descriptors2 = net(faces2,16);
+                std::vector<String> names;
+                String name;
+                for (size_t i = 0; i < face_descriptors2.size(); ++i) {
+                    name = "unknown";
+                    if (min(face_descriptors[0] - face_descriptors2[i]) < 0.2) {
+                        name = "user";
+                    }
+                    cout << name <<endl;
+                    names.push_back(name);
+                }
+
+                for (int i = 0; i < locations.size(); i++) {
+                    cv::rectangle(frame, Point(locations[i].left(), locations[i].top()),
+                                  Point(locations[i].right(), locations[i].bottom()), Scalar(0, 255, 0), 2);
+                    putText(frame, names[i], Point(locations[i].left() + 6, locations[i].top() - 6),
+                            FONT_HERSHEY_DUPLEX, 1.0, Scalar(255, 255, 255), 2);
+//                    cout << names[i] <<endl;
+                }
+            }
+
+
+
+
+
+
+
+
+//            dlib::array<matrix<rgb_pixel>> face_chips1;
+//            std::vector<matrix<rgb_pixel>> face_locations1;
+//            auto locations = detector(frame,1);
+//            cout<< typeid(locations).name()<< endl;
+//            std::vector<matrix<rgb_pixel>>  raw_landmarks;
+//            for (auto face : locations) {
+//                auto shape = pose_model(frame, face);
+//                cout<< typeid(shape).name()<< endl;
+////                raw_landmarks.push_back(shape);
+//            }
+//            for (auto raw : raw_landmarks)
+//                matrix<rgb_pixel> face_chip;
+//                net.compute_face_descriptor(frame, )
+//                extract_image_chip(frame, get_face_chip_details(shape,150,0.25), face_chip);
+//                face_locations1.push_back(move(face_chip));
                 // Also put some boxes on the faces so we can see that the detector is finding
                 // them.
-            }
 
 
 
 
 
-            std::vector<matrix<float,0,1>> face_descriptors1 = net(face_locations1);
 
-            std::vector<String> f_names;
-
-            for(auto f : face_descriptors1){
-                auto distance = face_encoding - f;
-                auto min_value = min(distance);
-                String name = "Unknown";
-                if(min_value < 0.6){
-                    name = "User";
-                }
-                f_names.push_back(name);
-            }
-
-            for(int i =0; i < locations.size(); i++){
-                cv::rectangle(frame, Point(locations[i].left(),locations[i].top()), Point(locations[i].right(),locations[i].bottom()),Scalar(0, 255, 0),2);
-                putText(frame, f_names[i], Point(locations[i].left() +6, locations[i].top()-6), FONT_HERSHEY_DUPLEX, 1.0, Scalar(255,255,255),2);
-
-            }
+//            std::vector<matrix<float,0,1>> face_descriptors1 = net(face_locations1);
+//
+//            std::vector<String> f_names;
+//
+//            for(auto f : face_descriptors1){
+//                auto distance = face_encoding - f;
+//                auto min_value = min(distance);
+//                String name = "Unknown";
+//                if(min_value < 0.6){
+//                    name = "User";
+//                }
+//                f_names.push_back(name);
+//            }
+//
+//            for(int i =0; i < locations.size(); i++){
+//                cv::rectangle(frame, Point(locations[i].left(),locations[i].top()), Point(locations[i].right(),locations[i].bottom()),Scalar(0, 255, 0),2);
+//                putText(frame, f_names[i], Point(locations[i].left() +6, locations[i].top()-6), FONT_HERSHEY_DUPLEX, 1.0, Scalar(255,255,255),2);
+//
+//            }
 
 
 
@@ -572,21 +639,25 @@ int main()
     return 0;
 }
 // Get the names of the output layers
-std::vector<String> getOutputsNames(const Net& net)
-{
-    static std::vector<String> names;
-    if (names.empty())
-    {
-        //Get the indices of the output layers, i.e. the layers with unconnected outputs
-        std::vector<int> outLayers = net.getUnconnectedOutLayers();
+//std::vector<String> getOutputsNames(const Net& net)
+//{
+//    static std::vector<String> names;
+//    if (names.empty())
+//    {
+//        //Get the indices of the output layers, i.e. the layers with unconnected outputs
+//        std::vector<int> outLayers = net.getUnconnectedOutLayers();
+//
+//        //get the names of all the layers in the network
+//        std::vector<String> layersNames = net.getLayerNames();
+//
+//        // Get the names of the output layers in names
+//        names.resize(outLayers.size());
+//        for (size_t i = 0; i < outLayers.size(); ++i)
+//            names[i] = layersNames[outLayers[i] - 1];
+//    }
+//    return names;
+//}
 
-        //get the names of all the layers in the network
-        std::vector<String> layersNames = net.getLayerNames();
 
-        // Get the names of the output layers in names
-        names.resize(outLayers.size());
-        for (size_t i = 0; i < outLayers.size(); ++i)
-            names[i] = layersNames[outLayers[i] - 1];
-    }
-    return names;
-}
+
+

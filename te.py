@@ -1,15 +1,3 @@
-import sys
-import os
-import dlib
-import glob
-import numpy as np
-import cv2
-import multiprocessing
-import PIL.Image
-from PIL import ImageFile
-import argparse
-import imutils
-from imutils.video import FPS
 
 face_detector = dlib.get_frontal_face_detector()
 predictor_68_point_model = "models/shape_predictor_68_face_landmarks.dat"
@@ -69,14 +57,6 @@ def face_distance(face_encodings, face_to_compare):
 
 
 def _raw_face_locations(img, number_of_times_to_upsample=1, model="hog"):
-    """
-    Returns an array of bounding boxes of human faces in a image
-    :param img: An image (as a numpy array)
-    :param number_of_times_to_upsample: How many times to upsample the image looking for faces. Higher numbers find smaller faces.
-    :param model: Which face detection model to use. "hog" is less accurate but faster on CPUs. "cnn" is a more accurate
-                  deep-learning model which is GPU/CUDA accelerated (if available). The default is "hog".
-    :return: A list of dlib 'rect' objects of found face locations
-    """
     if model == "cnn":
         return cnn_face_detector(img, number_of_times_to_upsample)
     else:
@@ -126,16 +106,9 @@ def batch_face_locations(images, number_of_times_to_upsample=1, batch_size=128):
     return list(map(convert_cnn_detections_to_css, raw_detections_batched))
 
 
-def _raw_face_landmarks(face_image, face_locations=None, model="large"):
-    if face_locations is None:
-        face_locations = _raw_face_locations(face_image)
-    else:
-        face_locations = [_css_to_rect(face_location) for face_location in face_locations]
-
+def _raw_face_landmarks(face_image):
+    face_locations = face_detector(face_image, 1)
     pose_predictor = pose_predictor_68_point
-
-    if model == "small":
-        pose_predictor = pose_predictor_5_point
 
     return [pose_predictor(face_image, face_location) for face_location in face_locations]
 
@@ -182,7 +155,10 @@ def face_encodings(face_image, known_face_locations=None, num_jitters=1):
     :param num_jitters: How many times to re-sample the face when calculating encoding. Higher is more accurate, but slower (i.e. 100 is 100x slower)
     :return: A list of 128-dimensional face encodings (one for each face in the image)
     """
-    raw_landmarks = _raw_face_landmarks(face_image, known_face_locations, model="small")
+
+    face_locations = face_detector(face_image, 1)
+    pose_predictor = pose_predictor_68_point
+    raw_landmarks = [pose_predictor(face_image, face_location) for face_location in face_locations]
     return [np.array(face_encoder.compute_face_descriptor(face_image, raw_landmark_set, num_jitters)) for raw_landmark_set in raw_landmarks]
 
 
@@ -227,8 +203,9 @@ def start_tracker(box, label, rgb, inputQueue, outputQueue):
 			outputQueue.put((label, (startX, startY, endX, endY)))
 
 
-if __name__ == '__main__':
 
+
+if __name__ == '__main__':
     known_face_names = []
     known_face_encodings = []
     dirname = 'knowns'
@@ -236,13 +213,16 @@ if __name__ == '__main__':
     for filename in files:
         name, ext = os.path.splitext(filename)
         if ext == '.jpg':
-
             known_face_names.append(name)
             pathname = os.path.join(dirname, filename)
 
             im = PIL.Image.open(pathname)
             img = np.array(im)
-            face_encoding = face_encodings(img)[0]
+
+            face_locations = face_detector(face_image, 1)
+            pose_predictor = pose_predictor_68_point
+            raw_landmarks = [pose_predictor(face_image, face_location) for face_location in face_locations]
+            face_encoding = [np.array(face_encoder.compute_face_descriptor(face_image, raw_landmark_set, 1)) for raw_landmark_set in raw_landmarks][0]
 
             known_face_encodings.append(face_encoding)
 
@@ -250,148 +230,3 @@ if __name__ == '__main__':
     f_locations = []
     f_encodings = []
     face_names = []
-
-
-
-    # construct the argument parser and parse the arguments
-    ap = argparse.ArgumentParser()
-    # ap.add_argument("-p", "--prototxt", required=True,
-    # 	help="path to Caffe 'deploy' prototxt file")
-    # ap.add_argument("-m", "--model", required=True,
-    # 	help="path to Caffe pre-trained model")
-
-
-    prototxt = "mobilenet_ssd/MobileNetSSD_deploy.prototxt"
-    model = "mobilenet_ssd/MobileNetSSD_deploy.caffemodel"
-
-    # initialize our list of queues -- both input queue and output queue
-    # for *every* object that we will be tracking
-    inputQueues = []
-    outputQueues = []
-
-    # initialize the list of class labels MobileNet SSD was trained to
-    # detect
-    CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
-               "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
-               "dog", "horse", "motorbike", "person", "pottedplant", "sheep",
-               "sofa", "train", "tvmonitor"]
-
-    # load our serialized model from disk
-    print("[INFO] loading model...")
-    net = cv2.dnn.readNetFromCaffe(prototxt, model)
-
-    # initialize the video stream and output video writer
-    print("[INFO] starting video stream...")
-    vs = cv2.VideoCapture(0)
-    writer = None
-
-    # start the frames per second throughput estimator
-    fps = FPS().start()
-
-    # loop over frames from the video file stream
-    while True:
-        # grab the next frame from the video file
-        (grabbed, frame) = vs.read()
-
-        # check to see if we have reached the end of the video file
-        if frame is None:
-            break
-
-        frame = imutils.resize(frame, width=600)
-        frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
-        rgb_small_frame = frame[:, :, ::-1]
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-
-        f_locations = face_locations(rgb_small_frame)
-        f_encodings = face_encodings(rgb_small_frame, f_locations)
-
-        face_names = []
-
-
-        (h, w) = frame.shape[:2]
-        blob = cv2.dnn.blobFromImage(frame, 0.007843, (w, h), 127.5)
-
-        net.setInput(blob)
-        detections = net.forward()
-        print(type(detections))
-
-
-        for face_encoding in f_encodings:
-            # See if the face is a match for the known face(s)
-            distances = face_distance(known_face_encodings, face_encoding)
-            min_value = min(distances)
-
-            # tolerance: How much distance between faces to consider it a match. Lower is more strict.
-            # 0.6 is typical best performance.
-            name = "Unknown"
-            if min_value < 0.6:
-                index = np.argmin(distances)
-                name = known_face_names[index]
-
-            face_names.append(name)
-
-
-
-        for (top, right, bottom, left), name in zip(f_locations, face_names):
-            cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-
-            # Draw a label with a name below the face
-            cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
-            font = cv2.FONT_HERSHEY_DUPLEX
-            cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
-
-
-
-
-        # loop over the detections
-        for i in np.arange(0, detections.shape[2]):
-            confidence = detections[0, 0, i, 2]
-
-            # filter out weak detections by requiring a minimum
-            # confidence
-            if confidence > 0.5:
-
-                idx = int(detections[0, 0, i, 1])
-                label = CLASSES[idx]
-
-                if CLASSES[idx] != "person":
-                    continue
-
-                box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
-                (startX, startY, endX, endY) = box.astype("int")
-                bb = (startX, startY, endX, endY)
-
-                cv2.rectangle(frame, (startX, startY), (endX, endY),
-                              (0, 255, 0), 2)
-                cv2.putText(frame, label, (startX, startY - 15),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 2)
-
-
-        if writer is not None:
-            writer.write(frame)
-
-        # show the output frame
-        cv2.imshow("Frame", frame)
-        key = cv2.waitKey(1) & 0xFF
-
-        # if the `q` key was pressed, break from the loop
-        if key == ord("q"):
-            break
-
-        # update the FPS counter
-        fps.update()
-
-    # stop the timer and display FPS information
-    fps.stop()
-    print("[INFO] elapsed time: {:.2f}".format(fps.elapsed()))
-    print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
-
-    # check to see if we need to release the video writer pointer
-    if writer is not None:
-        writer.release()
-
-    # do a bit of cleanup
-    cv2.destroyAllWindows()
-    vs.release()
-    cv2.threshold
