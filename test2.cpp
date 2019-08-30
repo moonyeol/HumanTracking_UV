@@ -3,7 +3,7 @@
 //기존 face_recognition_dlib
 //위 3개 참고
 //
-//컴파일 방법
+//컴파일 방
 //g++ -std=c++11 -O3 -I.. /home/e-on/dlib/dlib/dlib/all/source.cpp -lpthread -lX11 -ljpeg -DDLIB_JPEG_SUPPORT -o test2 test2.cpp $(pkg-config opencv4 --libs --cflags)
 //
 
@@ -115,6 +115,14 @@ using anet_type = loss_metric<fc_no_bias<128,avg_pool_everything<
         >>>>>>>>>>>>;
 
 
+
+//template <long num_filters, typename SUBNET> using con5d = con<num_filters,5,5,2,2,SUBNET>;
+//template <long num_filters, typename SUBNET> using con5  = con<num_filters,5,5,1,1,SUBNET>;
+//
+//template <typename SUBNET> using downsampler  = relu<affine<con5d<32, relu<affine<con5d<32, relu<affine<con5d<16,SUBNET>>>>>>>>>;
+//template <typename SUBNET> using rcon5  = relu<affine<con5<45,SUBNET>>>;
+//
+//using net_type = loss_mmod<con<1,9,9,1,1,rcon5<rcon5<rcon5<downsampler<input_rgb_image_pyramid<pyramid_down<6>>>>>>>>;
 
 
 
@@ -324,11 +332,16 @@ int main()
         // Load face detection and pose estimation models.
         frontal_face_detector detector = get_frontal_face_detector();
         shape_predictor pose_model;
-        deserialize("shape_predictor_5_face_landmarks.dat") >> pose_model;
+        deserialize("shape_predictor_68_face_landmarks.dat") >> pose_model;
 
 //        face_recognition_model_v1 face_encoder =  face_recognition_model_v1("models/dlib_face_recognition_resnet_model_v1.dat");
         anet_type net;
         deserialize("models/dlib_face_recognition_resnet_model_v1.dat") >> net;
+//        deserialize("models/mmod_human_face_detector.dat") >> net;
+
+
+//        net_type detector;
+//        deserialize("mmod_human_face_detector.dat") >> detector;
 
       //face recoginition 구현 중
 
@@ -436,7 +449,7 @@ int main()
 
             //face recoginition 구현 중
             if(found) {
-                array2d<bgr_pixel> img;
+                matrix<rgb_pixel> img;
                 dlib::assign_image(img, dlib::cv_image<rgb_pixel>(frame));
 
                 dlib::array<matrix<rgb_pixel>> faces2;
@@ -452,19 +465,28 @@ int main()
                 String name;
                 for (size_t i = 0; i < face_descriptors2.size(); ++i) {
                     name = "unknown";
-                    if (length(face_descriptors[0] - face_descriptors2[i]) < 0.2) {
+                    if (length(face_descriptors[0] - face_descriptors2[i]) < 0.5) {
                         name = "user";
                     }
                     cout << name <<endl;
                     names.push_back(name);
                 }
+                int i = 0;
+//                for (auto&& l : locations) {
+//                    cv::rectangle(frame, Point(l.rect.left(), l.rect.top()),
+//                                  Point(l.rect.right(), l.rect.bottom()), Scalar(0, 255, 0), 2);
+//                    putText(frame, names[i], Point(l.rect.left() + 6, l.rect.top() - 6),
+//                            FONT_HERSHEY_DUPLEX, 1.0, Scalar(255, 255, 255), 2);
+//                    i++;
+//                }
+
+
 
                 for (int i = 0; i < locations.size(); i++) {
                     cv::rectangle(frame, Point(locations[i].left(), locations[i].top()),
                                   Point(locations[i].right(), locations[i].bottom()), Scalar(0, 255, 0), 2);
                     putText(frame, names[i], Point(locations[i].left() + 6, locations[i].top() - 6),
                             FONT_HERSHEY_DUPLEX, 1.0, Scalar(255, 255, 255), 2);
-//                    cout << names[i] <<endl;
                 }
             }
 
