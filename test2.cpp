@@ -452,7 +452,7 @@ int main()
                 String name;
                 for (size_t i = 0; i < face_descriptors2.size(); ++i) {
                     name = "unknown";
-                    if (min(face_descriptors[0] - face_descriptors2[i]) < 0.2) {
+                    if (length(face_descriptors[0] - face_descriptors2[i]) < 0.2) {
                         name = "user";
                     }
                     cout << name <<endl;
