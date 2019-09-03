@@ -402,7 +402,7 @@ int main()
             resize(frame,frame, Size(600,600));
             double w = frame.cols;
             double h = frame.rows;
-            blob = blobFromImage(frame, 0.007843, Size(frame.cols , frame.rows), 127.5);
+            blob = blobFromImage(frame, 0.007843, Size(300,300), 127.5);
             net1.setInput(blob);
 
             Mat detection = net1.forward();

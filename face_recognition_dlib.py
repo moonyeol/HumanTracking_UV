@@ -310,11 +310,11 @@ if __name__ == '__main__':
 
 
         (h, w) = frame.shape[:2]
-        blob = cv2.dnn.blobFromImage(frame, 0.007843, (w, h), 127.5)
+        blob = cv2.dnn.blobFromImage(rgb_small_frame, 0.007843, (w, h), 127.5)
 
         net.setInput(blob)
         detections = net.forward()
-        print(type(detections))
+        print(detections)
 
 
         for face_encoding in f_encodings:
