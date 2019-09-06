@@ -70,13 +70,13 @@ template <typename SUBNET> using alevel4 = ares<32,ares<32,ares<32,SUBNET>>>;
 
 using anet_type = loss_metric<fc_no_bias<128,avg_pool_everything<
         alevel0<
-        alevel1<
-        alevel2<
-        alevel3<
-        alevel4<
-        max_pool<3,3,2,2,relu<affine<con<32,7,7,2,2,
-                input_rgb_image_sized<150>
-        >>>>>>>>>>>>;
+                alevel1<
+                        alevel2<
+                                alevel3<
+                                        alevel4<
+                                                max_pool<3,3,2,2,relu<affine<con<32,7,7,2,2,
+                                                        input_rgb_image_sized<150>
+                                                >>>>>>>>>>>>;
 
 
 
@@ -123,7 +123,7 @@ int main()
 //        net_type detector;
 //        deserialize("mmod_human_face_detector.dat") >> detector;
 
-      //face recoginition 구현 중
+        //face recoginition 구현 중
 
         matrix<rgb_pixel> user_img;
         load_image(user_img, "user.jpg");
@@ -171,22 +171,22 @@ int main()
             for(int i =0; i < detection.size.p[2]; i++){
                 float confidence = detection.at<float>(Vec<int,4>(0,0,i,2));
 
-                    if(confidence > 0.6) {
-                        int idx = detection.at<float>(Vec<int, 4>(0, 0, i, 1));
-                        String label = classes[idx];
+                if(confidence > 0.6) {
+                    int idx = detection.at<float>(Vec<int, 4>(0, 0, i, 1));
+                    String label = classes[idx];
 
-                        if (label.compare("person")) {
-                            found =false;
+                    if (label.compare("person")) {
+                        found =false;
                         continue;
                     }
-                int startX = (int) (detection.at<float>(Vec<int,4>(0,0,i,3)) * frame.cols);
-                int startY = (int) (detection.at<float>(Vec<int,4>(0,0,i,4)) * frame.rows);
-                int endX = (int) (detection.at<float>(Vec<int,4>(0,0,i,5)) * frame.cols);
-                int endY = (int) (detection.at<float>(Vec<int,4>(0,0,i,6)) * frame.rows);
+                    int startX = (int) (detection.at<float>(Vec<int,4>(0,0,i,3)) * frame.cols);
+                    int startY = (int) (detection.at<float>(Vec<int,4>(0,0,i,4)) * frame.rows);
+                    int endX = (int) (detection.at<float>(Vec<int,4>(0,0,i,5)) * frame.cols);
+                    int endY = (int) (detection.at<float>(Vec<int,4>(0,0,i,6)) * frame.rows);
 
-                        cv::rectangle(frame, Point(startX,startY), Point(endX,endY),Scalar(0, 255, 0),2);
-                        putText(frame, label, Point(startX, startY-15), FONT_HERSHEY_SIMPLEX, 0.45, Scalar(0,255,0),2);
-                    }
+                    cv::rectangle(frame, Point(startX,startY), Point(endX,endY),Scalar(0, 255, 0),2);
+                    putText(frame, label, Point(startX, startY-15), FONT_HERSHEY_SIMPLEX, 0.45, Scalar(0,255,0),2);
+                }
             }
 
 
@@ -223,6 +223,7 @@ int main()
                     names.push_back(name);
                 }
                 int i = 0;
+                auto tempsize = 0;
 //                for (auto&& l : locations) {
 //                    cv::rectangle(frame, Point(l.rect.left(), l.rect.top()),
 //                                  Point(l.rect.right(), l.rect.bottom()), Scalar(0, 255, 0), 2);
@@ -236,9 +237,32 @@ int main()
                 for (int i = 0; i < locations.size(); i++) {
                     cv::rectangle(frame, Point(locations[i].left(), locations[i].top()),
                                   Point(locations[i].right(), locations[i].bottom()), Scalar(0, 255, 0), 2);
+                    auto center = locations[i].right() - locations[i].left();
+                    cout<<"center : "<<center<<endl;
+                    if (tempsize=0){
+                        tempsize = center;
+                        cout<<"값을 저장하였습니다"<<endl;
+                    }
+                    else if (tempsize != 0)
+                    {
+                        if (tempsize < center)
+                        {
+                            cout<<"저장값 : "<<tempsize<<endl;
+                            cout<<"대상이 가까워졌습니다."<<endl;
+                            tempsize = center;
+                        }
+                        else if(tempsize > center)
+                        {
+                            cout<<"저장값 : "<<tempsize<<endl;
+                            cout<<"대상이 멀어졌습니다."<<endl;
+                            tempsize = center;
+                        }
+                    }
+
                     putText(frame, names[i], Point(locations[i].left() + 6, locations[i].top() - 6),
                             FONT_HERSHEY_DUPLEX, 1.0, Scalar(255, 255, 255), 2);
                 }
+//
             }
 
 
