@@ -157,6 +157,7 @@ int main()
         Net net2 = cv::dnn::readNetFromTensorflow(tensorflowWeightFile, tensorflowConfigFile);
 #endif
         net2.setPreferableTarget(DNN_TARGET_OPENCL);
+        dlib::array<matrix<rgb_pixel>> faces;
 
 
       //face recoginition 구현 중
@@ -164,7 +165,6 @@ int main()
         matrix<rgb_pixel> user_img;
         load_image(user_img, "user.jpg");
 
-        dlib::array<matrix<rgb_pixel>> faces;
         for (auto face : detector(user_img)) {
             auto shape = pose_model(user_img, face);
             matrix<rgb_pixel> face_chip;

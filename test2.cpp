@@ -21,6 +21,7 @@
 #include <opencv4/opencv2/dnn/dnn.inl.hpp>
 #include <opencv4/opencv2/dnn/dnn.hpp>
 #include <opencv4/opencv2/cudaimgproc.hpp>
+#include <opencv4/opencv2/core/cuda.hpp>
 #include <dlib/opencv/cv_image.h>
 #include <dlib/opencv.h>
 #include <dlib/image_processing/frontal_face_detector.h>
@@ -45,7 +46,6 @@ using namespace dlib;
 using namespace std;
 
 
-// __________ STRUCTURING NEURAL NETWORK OF FACIAL RECOGNITION MODEL "dlib_face_recognition_resnet_model_v1.dat". __________ //
 template <template <int,template<typename>class,int,typename> class block, int N, template<typename>class BN, typename SUBNET>
 using residual = add_prev1<block<N,BN,1,tag1<SUBNET>>>;
 
@@ -90,11 +90,32 @@ using anet_type = loss_metric<fc_no_bias<128,avg_pool_everything<
 //using net_type = loss_mmod<con<1,9,9,1,1,rcon5<rcon5<rcon5<downsampler<input_rgb_image_pyramid<pyramid_down<6>>>>>>>>;
 
 
+const size_t inWidth = 300;
+const size_t inHeight = 300;
+const double inScaleFactor = 1.0;
+const float confidenceThreshold = 0.7;
+const cv::Scalar meanVal(104.0, 177.0, 123.0);
+
+#define tensor
+
+const std::string caffeConfigFile = "./models/deploy.prototxt";
+const std::string caffeWeightFile = "./models/res10_300x300_ssd_iter_140000_fp16.caffemodel";
+
+const std::string tensorflowConfigFile = "./models/opencv_face_detector.pbtxt";
+const std::string tensorflowWeightFile = "./models/opencv_face_detector_uint8.pb";
+
+
+
+
+
+
+
 
 
 int main()
 {
     // TRY BLOCK CODE START
+
     try
     {
         // CREATE VECTOR OBJECT CALLED "detection1" WHICH CAN CONTAIN LIST OF MAT OBJECTS.
@@ -105,29 +126,27 @@ int main()
         std::vector<Mat> detection1;
         std::vector<std::vector<std::vector<Mat>>> detection2;
         cv::VideoCapture cap;
-        
+
         // OPEN DEFAULT CAMERA OF `/dev/video0` WHERE ITS INTEGER IS FROM THE BACK.
-        /* 
+        /*
             Set the video resolution by `cap` as designated pixel size, does not work on called video file.
             Access, or "open" default camera which is presumes to be `/dev/video0` file
                 ...(which is where number 0 may have derived from).
         */
-        cap.open(0);
-        capture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
-        capture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
-        
+
+        cap.open(0); // 노트북 카메라는 cap.open(1) 또는 cap.open(-1)
+        // USB 카메라는 cap.open(0);
         int x1;
         int y1;
         int x2;
         int y2;
-        bool found = false; // FIXME INEFFICIENT CODE
+        bool found = false;// FIXME INEFFICIENT CODE
 
-        
-        
-        
+        // Load face detection and pose estimation models.
+
         // __________ PREPARATION OF FACIAL RECOGNITION BY SETTING NEURAL NETWORK FOR FACIAL DETECTION AND RECOGNITION. __________ //
 
-        // DECLARE A FRONTAL FACE DETECTOR (HOG BASED) TO A VARIABLE "detector". 
+        // DECLARE A FRONTAL FACE DETECTOR (HOG BASED) TO A VARIABLE "detector".
         /*
             >> `dlib::get_frontal_face_detector()`: return "dlib::object_detector" object upon detecting a frontal face.
                 ...while the returned variable type here is `dlib::frontal_face_detector` is actually an alias of `dlib::object_detector`.
@@ -136,8 +155,12 @@ int main()
             >> `dlib::object_detector`: a tool for detecting the positions of objects in an image.
                 ...returns `dlib::rectangle` describing left, top, right, and bottom boundary pixel position of the rectangle.
         */
+
+
+
+
+
         frontal_face_detector detector = get_frontal_face_detector();
-        
         // FACIAL LANDMARK DETECTION
         /*
             >> `dlib::shape_predictor`: an empty DNN frame that can take external model such as "shape_predictor_68_face_landmarks.dat".
@@ -155,7 +178,6 @@ int main()
         */
         shape_predictor pose_model;
         deserialize("shape_predictor_68_face_landmarks.dat") >> pose_model;
-
         // ASSIGN VARIABLE "net" AS AN OBJECT OF "anet_type" DEFINED ABOVE.
         /*
             >> `models/dlib_face_recognition_resnet_model_v1.dat`: DNN for a "FACIAL RECOGNITION".
@@ -166,16 +188,23 @@ int main()
                 ...reconstructed recognition model is placed in a hollow neural network frame manually created using operator `>>`.
                 ...where now this variable `net` works as a model.
         */
+
+//        face_recognition_model_v1 face_encoder =  face_recognition_model_v1("models/dlib_face_recognition_resnet_model_v1.dat");
         anet_type net;
         deserialize("models/dlib_face_recognition_resnet_model_v1.dat") >> net;
-//        face_recognition_model_v1 face_encoder =  face_recognition_model_v1("models/dlib_face_recognition_resnet_model_v1.dat");
 //        deserialize("models/mmod_human_face_detector.dat") >> net;
+
 
 //        net_type detector;
 //        deserialize("mmod_human_face_detector.dat") >> detector;
 
 
-        
+#ifdef CAFFE
+        Net net2 = cv::dnn::readNetFromCaffe(caffeConfigFile, caffeWeightFile);
+#else
+        Net net2 = cv::dnn::readNetFromTensorflow(tensorflowWeightFile, tensorflowConfigFile);
+#endif
+        net2.setPreferableTarget(DNN_TARGET_OPENCL);
 
         // __________ PROCESS OF ACQUIRING USER FACIAL DATA FOR A FUTURE USER RECOGNITION. __________ //
 
@@ -184,8 +213,6 @@ int main()
             >> `dlib::matrix<dlib::rgb_pixel>`: dlib::matrix is a rank-2 tensor (width and height)
                 ... and dlib::rgb_pixel is a rank-1 tensor (RGB channel per pixel). Therefore, the parameterized type is to stores image data.
         */
-        matrix<rgb_pixel> user_img;
-        load_image(user_img, "user.jpg");
 
         // PREPARE A VARIABLE TO STORE ALL OF DETECTED FACES.
         /*
@@ -193,8 +220,8 @@ int main()
                 ...Since dlib::array store rank-1 tensor, the parameterized type is to store multiple number of image data in a list.
         */
         dlib::array<matrix<rgb_pixel>> faces;
-        
-        // STORES FACIAL IMAGE CHIP(AKA. FACIAL PORTION OF CROPPED IMAGE) FOR FACIAL RECOGNITION. 
+
+        // STORES FACIAL IMAGE CHIP(AKA. FACIAL PORTION OF CROPPED IMAGE) FOR FACIAL RECOGNITION.
         /*
             >> `for (auto face : facial_detector(<image>))`: a range-based for loop, iterating as many as number of detected face in FACIAL IMAGE.
                 ...returns dlib::rectangle of frontal face starting from left, top, right, and bottom boundary pixel position.
@@ -204,22 +231,25 @@ int main()
                 ...object "shape" has rect data and 68-landmarks data (which includes x,y pixel locations).
 
             >> `dlib::get_face_chip_details(<landmark_data>,<crop_size(square)>,<crop_padding>)`: considering <crop_size> and <crop_padding>,
-                ...provides chip_detail object to `dlib::extract_image_chip()` for chipping reference based on landmark 5-point or 68-point. 
+                ...provides chip_detail object to `dlib::extract_image_chip()` for chipping reference based on landmark 5-point or 68-point.
 
             >> `dlib::extract_image_chip(<input_image>,<chip_details>,<output_chip>)`: while <chip_details> works as a image-crop reference,
                 ...extract image_chip from <input_image> to <output_chip>.
         */
+
+        //face recoginition 구현 중
+
+        matrix<rgb_pixel> user_img;
+        load_image(user_img, "user.jpg");
+
         for (auto face : detector(user_img)) {
             auto shape = pose_model(user_img, face);
-            
-            // PREPARE A VARIABLE "face_chip" TO STORE FACE-CROPPED IMAGE.
             matrix<rgb_pixel> face_chip;
             extract_image_chip(user_img, get_face_chip_details(shape,150,0.25), face_chip);
-            
-            // MOVE (NOT COPY) THE "face_chip" DATA TO CONTAINER VARIABLE "faces", EMPTYING THE "face_chip" VARIABLE.
             faces.push_back(move(face_chip));
         }
-        
+
+
         // CREATE A VARIALBE "face_detected_user" FOR FUTURE FACIAL COMPARISON.
         /*
             >> It is still unclear what the stored value `face_detected_user[0]` represents,
@@ -229,7 +259,6 @@ int main()
         */
         std::vector<matrix<float,0,1>> face_descriptors = net(faces,16);
 
-        
 
 
         // __________ PROCESS OF PERSON DETECTION USING EXISTING FRAMEWORK MODEL. __________ //
@@ -238,12 +267,14 @@ int main()
         // ...FOR PERSON DETECTION (NOT A FACIAL DETECTION)
         String prototxt = "mobilenet_ssd/MobileNetSSD_deploy.prototxt";
         String model = "mobilenet_ssd/MobileNetSSD_deploy.caffemodel";
-        
+
+
+
         // ACQUIRE LIST OF CLASSES.
         /*
             >> `cv::String::c_str()`: also available as "std::string::c_str()";
-                ...returns array with strings splitted on NULL (blank space, new line). 
-            
+                ...returns array with strings splitted on NULL (blank space, new line).
+
             >> `cv::vector::push_back(<data>)`: push the data at the back end of the current last element.
                 ...just like a push-back of the stack data structure.
 
@@ -258,26 +289,26 @@ int main()
 
         // IMPORT CAFFE CONFIG AND MODEL TO THE NEURAL NETWORK:
         //  ...for a "PERSON DETECTION".
+
         Net net1 = readNetFromCaffe(prototxt, model);
+        net1.setPreferableTarget(DNN_TARGET_OPENCL);
 
         // WHILE CAMERA IS OPENED...
         while(cap.isOpened()){
-            
             // VIDEOCAPTURE "CAPTURE" RETURN ITS FRAME TO MAT "FRAME".
+
             cap >> frame;
+            double t = cv::getTickCount();
             resize(frame,frame, Size(640,480));
 
-            // EXIT IF FRAME IS EMPTY (CAPTURING IS NOT WORKING PROPERLY) OR WHEN "RETURN" KEY IS PRESSED.
-            if (cv::waitKey(33)==13 || frame.empty()) break;
-            
             // CONVERT FRAME TO PREPROCESSED "BLOB" FOR MODEL PREDICTION.
             /*
                 >> `blobFromImage(<input>, <output>, <scalefactor>, <size>, <mean>, <swapRB>, <crop>, <ddepth>)`
                     ...(1/255): Scale the factors as to normalize RGB value from (0~255) to (0~1).
                     ...cv::Size(300,300): resize the output blob to 300x300 as noted by model configuration .prototxt file.
             */
-            blob = blobFromImage(frame, 0.00392, Size(300,300), 127.5);
-            
+            blob = blobFromImage(frame, 0.007843, Size(300,300), 127.5);
+
             // HAVE BLOB AS AN INPUT OF THE NEURAL NETWORK TO PASS THROUGH (PLACED BUT NOT PASSED THROUGH YET).
             net1.setInput(blob);
 
@@ -294,12 +325,12 @@ int main()
             */
             Mat detection = net1.forward();
 
-            
-            // 코드는 이해 완료: 그러나 작성자의 귀차니즘으로 주석을 넣고 싶으신 분은 직접 넣어보시기 바랍니다.
+
             found =true;
             std::vector<int> classIds;
             std::vector<float> confidences;
             std::vector<Rect> boxes;
+
 
             for(int i =0; i < detection.size.p[2]; i++){
                 float confidence = detection.at<float>(Vec<int,4>(0,0,i,2));
@@ -319,19 +350,64 @@ int main()
 
                     cv::rectangle(frame, Point(startX,startY), Point(endX,endY),Scalar(0, 255, 0),2);
                     putText(frame, label, Point(startX, startY-15), FONT_HERSHEY_SIMPLEX, 0.45, Scalar(0,255,0),2);
+
                 }
             }
 
+
+
+
+
+
+            //face recoginition 구현 중
             if(found) {
 
                 matrix<rgb_pixel> img;
-                Mat rgb_frame;
-                cvtColor(frame,rgb_frame,COLOR_BGR2RGB);
+//                cv::cuda::GpuMat rgb_frame;
+//                Mat rgb_frame;
+//                cvtColor(frame,rgb_frame,COLOR_BGR2RGB);
 
-                dlib::assign_image(img, dlib::cv_image<rgb_pixel>(rgb_frame));
+                dlib::assign_image(img, dlib::cv_image<rgb_pixel>(frame));
+
+
+
+
+                std::vector<dlib::rectangle> locations;
+
+                int frameHeight = frame.rows;
+                int frameWidth = frame.cols;
+
+#ifdef CAFFE
+                cv::Mat inputBlob = cv::dnn::blobFromImage(frame, inScaleFactor, cv::Size(inWidth, inHeight), meanVal, false, false);
+#else
+                cv::Mat inputBlob = cv::dnn::blobFromImage(frame, inScaleFactor, cv::Size(inWidth, inHeight), meanVal, true, false);
+#endif
+
+                net2.setInput(inputBlob,"data");
+                cv::Mat detection = net2.forward("detection_out");
+
+                cv::Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
+
+                for(int i = 0; i < detectionMat.rows; i++)
+                {
+                    float confidence = detectionMat.at<float>(i, 2);
+
+                    if(confidence > confidenceThreshold)
+                    {
+                        int x1 = static_cast<int>(detectionMat.at<float>(i, 3) * frameWidth);
+                        int y1 = static_cast<int>(detectionMat.at<float>(i, 4) * frameHeight);
+                        int x2 = static_cast<int>(detectionMat.at<float>(i, 5) * frameWidth);
+                        int y2 = static_cast<int>(detectionMat.at<float>(i, 6) * frameHeight);
+
+                        locations.push_back(dlib::rectangle(x1,y1,x2,y2));
+                    }
+                }
+
+
+
 
                 dlib::array<matrix<rgb_pixel>> faces2;
-                auto locations = detector(img);
+//                auto locations = detector(img);
                 for (auto face : locations) {
                     auto shape = pose_model(img, face);
                     matrix<rgb_pixel> face_chip;
@@ -346,11 +422,11 @@ int main()
                     if (length(face_descriptors[0] - face_descriptors2[i]) < 0.5) {
                         name = "user";
                     }
-                    cout << name <<endl;
+
                     names.push_back(name);
                 }
                 int i = 0;
-                auto tempsize = 0;
+
 //                for (auto&& l : locations) {
 //                    cv::rectangle(frame, Point(l.rect.left(), l.rect.top()),
 //                                  Point(l.rect.right(), l.rect.bottom()), Scalar(0, 255, 0), 2);
@@ -360,49 +436,41 @@ int main()
 //                }
 
 
+
                 for (int i = 0; i < locations.size(); i++) {
-                    
-                    // DRAW RECTANGLE AROUND THE DETECTED OBJECT AND SHOW TEXT OF WHAT CLASS IT IS.
                     cv::rectangle(frame, Point(locations[i].left(), locations[i].top()),
                                   Point(locations[i].right(), locations[i].bottom()), Scalar(0, 255, 0), 2);
                     putText(frame, names[i], Point(locations[i].left() + 6, locations[i].top() - 6),
                             FONT_HERSHEY_DUPLEX, 1.0, Scalar(255, 255, 255), 2);
-                    
-                    // AQURING COORDINATE FOR SERVO MOTOR CONTROL TO TRACKING PURPOSE.
-                    auto center = locations[i].right() - locations[i].left();
-                    cout<<"center : "<<center<<endl;
-                    if (tempsize=0){
-                        tempsize = center;
-                        cout<<"값을 저장하였습니다"<<endl;
-                    }
-                    else if (tempsize != 0)
-                    {
-                        if (tempsize < center)
-                        {
-                            cout<<"저장값 : "<<tempsize<<endl;
-                            cout<<"대상이 가까워졌습니다."<<endl;
-                            tempsize = center;
-                        }
-                        else if(tempsize > center)
-                        {
-                            cout<<"저장값 : "<<tempsize<<endl;
-                            cout<<"대상이 멀어졌습니다."<<endl;
-                            tempsize = center;
-                        }
-                    }
-
-
                 }
+
+
 
             }
 
-            // SHOW CAPTURED VIDEO.
-            cv::imshow("EXAMPLE02",frame);
 
-        }   // END OF WHILE LOOP
-    }   // END OF TRY BLOCK
-    
-    // EXCEPTION 1: NO LANDMARKING MODEL DETECTED.
+
+            double tt_opencvDNN = 0;
+            double fpsOpencvDNN = 0;
+
+
+
+            tt_opencvDNN = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+            fpsOpencvDNN = 1/tt_opencvDNN;
+            putText(frame, format("OpenCV DNN ; FPS = %.2f",fpsOpencvDNN), Point(10, 50), FONT_HERSHEY_SIMPLEX, 1.4, Scalar(0, 0, 255), 4);
+
+
+            // SHOW CAPTURED VIDEO.
+
+            cv::imshow("HumanTrackingUV",frame);
+            if (cv::waitKey(30)==27)
+            {
+                break;
+            }
+        }// END OF WHILE LOOP
+    }// END OF TRY BLOCK
+
+        // EXCEPTION 1: NO LANDMARKING MODEL DETECTED.
     catch(serialization_error& e)
     {
         cout << "You need dlib's default face landmarking model file to run this example." << endl;
@@ -410,15 +478,13 @@ int main()
         cout << "   http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2" << endl;
         cout << endl << e.what() << endl;
     }
-    
-    // EXCEPTION 2
+        // EXCEPTION 2
     catch(exception& e)
     {
         cout << e.what() << endl;
     }
-    
     // DESTROY WINDOWS UPON END OF EXECUTION.
-    cv::destroyAllWindows();
+    cv::destroyWindow("HumanTrackingUV");
     return 0;
 }
 
