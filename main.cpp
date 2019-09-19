@@ -101,8 +101,8 @@ const cv::Scalar meanVal(104.0, 177.0, 123.0);
 const std::string caffeConfigFile = "./models/deploy.prototxt";
 const std::string caffeWeightFile = "./models/res10_300x300_ssd_iter_140000_fp16.caffemodel";
 
-//const std::string tensorflowConfigFile = "./models/opencv_face_detector.pbtxt";
-//const std::string tensorflowWeightFile = "./models/opencv_face_detector_uint8.pb";
+const std::string tensorflowConfigFile = "./models/opencv_face_detector.pbtxt";
+const std::string tensorflowWeightFile = "./models/opencv_face_detector_uint8.pb";
 
 
 
@@ -177,7 +177,7 @@ int main()
                 ...본 파일을 상업적 용도로 사용하기 위해서는 반드시 Imperial College London에 연락하기 바랍니다.
         */
         shape_predictor pose_model;
-        deserialize("models/shape_predictor_68_face_landmarks.dat") >> pose_model;
+        deserialize("./models/shape_predictor_68_face_landmarks.dat") >> pose_model;
         // ASSIGN VARIABLE "net" AS AN OBJECT OF "anet_type" DEFINED ABOVE.
         /*
             >> `models/dlib_face_recognition_resnet_model_v1.dat`: DNN for a "FACIAL RECOGNITION".
@@ -191,7 +191,7 @@ int main()
 
 //        face_recognition_model_v1 face_encoder =  face_recognition_model_v1("models/dlib_face_recognition_resnet_model_v1.dat");
         anet_type net;
-        deserialize("models/dlib_face_recognition_resnet_model_v1.dat") >> net;
+        deserialize("./models/dlib_face_recognition_resnet_model_v1.dat") >> net;
 //        deserialize("models/mmod_human_face_detector.dat") >> net;
 
 
@@ -265,8 +265,8 @@ int main()
 
         // PROTOTXT AND CAFFEMODEL IS A COUNTERPART OF CONFIG AND WEIGHT IN DARKNET;
         // ...FOR PERSON DETECTION (NOT A FACIAL DETECTION)
-        String prototxt = "models/MobileNetSSD_deploy.prototxt";
-        String model = "models/MobileNetSSD_deploy.caffemodel";
+        String prototxt = "./models/MobileNetSSD_deploy.prototxt";
+        String model = "./models/MobileNetSSD_deploy.caffemodel";
 
 
 
