@@ -190,7 +190,7 @@ int main()
 
 
 
-    toptions.c_cflag = B9600 | CS8 | CLOCAL | CREAD; // CLOCAL : Ignore modem control lines CREAD :Enable receiver.
+    toptions.c_cflag = B115200 | CS8 | CLOCAL | CREAD; // CLOCAL : Ignore modem control lines CREAD :Enable receiver.
     //toptions.c_cflag |= CREAD | CLOCAL;  // turn on READ & ignore ctrl lines
 
     toptions.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl
@@ -257,7 +257,6 @@ int main()
             >> `dlib::get_frontal_face_detector()`: return "dlib::object_detector" object upon detecting a frontal face.
                 ...while the returned variable type here is `dlib::frontal_face_detector` is actually an alias of `dlib::object_detector`.
                 ...Python didn't needed this data-type since variable in Python does not need to data-type designation.
-
             >> `dlib::object_detector`: a tool for detecting the positions of objects in an image.
                 ...returns `dlib::rectangle` describing left, top, right, and bottom boundary pixel position of the rectangle.
         */
@@ -273,10 +272,8 @@ int main()
                 ...returns set of point locations that define the pose of the object, in this case, face landmark locations.
                 ...therefore, shape_predictor is a neural network for "FACIAL DETECTION".
                     ...There exist `dlib::shape_predictor_trainer` which can train custom model from an empty DNN frame.
-
             >> `dlib::deserialize()`  : recover data saved in serialized back to its original format with deserialization.
                 ...the operator `>>` imports the file of model to the "dlib::shape_predictor" object.
-
             >> `shape_predictor_68_face_landmarks.dat`: a file containing a model of pin-pointing 68 facial landmark.
                 ...data is saved in serialized format which can be stored, transmitted and reconstructed (deserialization) later.
                 ...얼굴 랜드마크 데이터 파일 "shape_predictor_68_face_landmarks.dat"의 라이선스는 함부로 상업적 이용을 금합니다.
@@ -289,7 +286,6 @@ int main()
             >> `models/dlib_face_recognition_resnet_model_v1.dat`: DNN for a "FACIAL RECOGNITION".
                 ...it is presume this file too needs deserialization which reconstructs to original data format.
                 ...for more information of a serialization, read this webpage; https://www.geeksforgeeks.org/serialization-in-java/.
-
             >> statement `dlib::deserialize("models/dlib_face_recognition_resnet_model_v1.dat") >> net;`
                 ...reconstructed recognition model is placed in a hollow neural network frame manually created using operator `>>`.
                 ...where now this variable `net` works as a model.
@@ -331,14 +327,11 @@ int main()
         /*
             >> `for (auto face : facial_detector(<image>))`: a range-based for loop, iterating as many as number of detected face in FACIAL IMAGE.
                 ...returns dlib::rectangle of frontal face starting from left, top, right, and bottom boundary pixel position.
-
             >> `auto shape = net_landmark(<image>, <face_rect>)`: determines the facial region with <face_rect> in the  original image <image>,
                 ...and from there extract 68-landmarks.
                 ...object "shape" has rect data and 68-landmarks data (which includes x,y pixel locations).
-
             >> `dlib::get_face_chip_details(<landmark_data>,<crop_size(square)>,<crop_padding>)`: considering <crop_size> and <crop_padding>,
                 ...provides chip_detail object to `dlib::extract_image_chip()` for chipping reference based on landmark 5-point or 68-point.
-
             >> `dlib::extract_image_chip(<input_image>,<chip_details>,<output_chip>)`: while <chip_details> works as a image-crop reference,
                 ...extract image_chip from <input_image> to <output_chip>.
         */
@@ -360,7 +353,6 @@ int main()
         /*
             >> It is still unclear what the stored value `face_detected_user[0]` represents,
                 ...but it is possible the value is (1) Loss, (2) Score, or (3) Confidence.
-
             >> `net_recognition(<input_data>,<batch_size>)`: uncertain of a purpose of a <batch_size> is; there's only one facial data here!
         */
         std::vector<matrix<float,0,1>> face_descriptors = net(faces,16);
@@ -380,10 +372,8 @@ int main()
         /*
             >> `cv::String::c_str()`: also available as "std::string::c_str()";
                 ...returns array with strings splitted on NULL (blank space, new line).
-
             >> `cv::vector::push_back(<data>)`: push the data at the back end of the current last element.
                 ...just like a push-back of the stack data structure.
-
                     Hence, the name of the classes are all stored in variable "classes".
         */
         String classesFile = "names";
@@ -422,7 +412,6 @@ int main()
             /*
                 >> IF "outNames" is empty, the `cv::dnn::Net::forward()` runs forward pass for the whole network.
                     ...returns variable "outs" which contains blobs for first outputs of specified layers.
-
                 >> Variable "object_detection":
                     ...rank-1: None
                     ...rank-2: None
@@ -530,6 +519,8 @@ int main()
                         name = "user";
                         long xcenter = (locations[i].right() + locations[i].left())/2;
                         long ycenter= (locations[i].bottom() + locations[i].top())/2;
+                        long size = (locations[i].right() - locations[i].left());
+                        cout<<"size = "<<size<<endl;
 
                         if (xcenter!=320&&ycenter!= 240)
                         {
@@ -547,7 +538,7 @@ int main()
                                 cout<<"저장값 : "<<tempsize<<endl;
                                 cout<<"대상이 가까워졌습니다."<<endl;
                                 tempsize = xcenter;
-                                data = "g";
+                                data = "b";
 
                                 //data= "g";
                                 //write(fd, data, strlen(data));
@@ -558,10 +549,25 @@ int main()
                                 cout<<"저장값 : "<<tempsize<<endl;
                                 cout<<"대상이 멀어졌습니다."<<endl;
                                 tempsize = xcenter;
-                                data = "b";
+                                data = "g";
 
                                 //data = "b";
                                 //write(fd, data, strlen(data));
+                                write(fd, data, strlen(data));
+                            }
+                            else if(xcenter <100)
+                            {
+                                data="l";
+                                write(fd, data, strlen(data));
+                            }
+                            else if(xcenter < 520)
+                            {
+                                data="r";
+                                write(fd, data, strlen(data));
+                            }
+                            else if(tempsize<xcenter+5)
+                            {
+                                data="s";
                                 write(fd, data, strlen(data));
                             }
                         }
@@ -633,4 +639,3 @@ int main()
     cv::destroyWindow("HumanTrackingUV");
     return 0;
 }
-
