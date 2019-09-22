@@ -764,7 +764,6 @@ void rplidar(RPlidarDriver* rplidarA1, int distances[DIRECTION]){
     // 스캔을 실패하였을 경우 아래의 코드를 실행한다.
     if (IS_FAIL(result)) {   
         std::cout << "[ERROR] FAILED TO SCAN USING LIDAR." << std::endl;
-        break;
     }
 }
 /*__________ [END]: RPLIDAR A1 제어 __________*/
