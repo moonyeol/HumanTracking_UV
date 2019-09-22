@@ -26,6 +26,7 @@
 #include <unistd.h>   /* UNIX standard function definitions */
 #include <fcntl.h>    /* File control definitions */
 #include <termios.h>  /* POSIX terminal control definitions */
+
 /*__________ RPLIDAR __________*/
 #include <rplidar.h>
 #include <cmath>
@@ -429,7 +430,6 @@ int main(int argc, char **argv ) {
                 fprintf(stderr, "Failed to connect to LIDAR %08x\r\n", result);
                 break;
             }
-                
             /*__________ [END]: RPLIDAR A1 센서 제어 __________*/
                 
             // VIDEOCAPTURE "CAPTURE" RETURN ITS FRAME TO MAT "FRAME".
@@ -700,7 +700,7 @@ int main(int argc, char **argv ) {
 }
 
 
-/*__________ RPLIDAR A1 센서 제어 함수 __________*/
+/*__________ [START] RPLIDAR A1 센서 제어 함수 __________*/
 
 void rplidar(RPlidarDriver* rplidarA1, int distances[DIRECTION]){
 
@@ -767,3 +767,4 @@ void rplidar(RPlidarDriver* rplidarA1, int distances[DIRECTION]){
         break;
     }
 }
+/*__________ [END]: RPLIDAR A1 제어 __________*/
