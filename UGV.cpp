@@ -8,48 +8,24 @@
 
 
 #include <opencv4/opencv2/highgui/highgui.hpp>
-#include <opencv4/opencv2/highgui.hpp>
-#include <opencv4/opencv2/videoio.hpp>
 #include <opencv4/opencv2/imgproc.hpp>
-#include <opencv4/opencv2/objdetect.hpp>
-#include <opencv4/opencv2/imgproc.hpp>
-#include <opencv4/opencv2/highgui.hpp>
-#include <opencv4/opencv2/dnn.hpp>
-#include <opencv4/opencv2/core.hpp>
 #include <opencv4/opencv2/dnn/dict.hpp>
-#include <opencv4/opencv2/dnn/layer.hpp>
-#include <opencv4/opencv2/dnn/dnn.inl.hpp>
-#include <opencv4/opencv2/dnn/dnn.hpp>
 #include <opencv4/opencv2/cudaimgproc.hpp>
-#include <opencv4/opencv2/core/cuda.hpp>
 #include <dlib/opencv/cv_image.h>
-#include <dlib/opencv.h>
 #include <dlib/image_processing/frontal_face_detector.h>
-#include <dlib/image_processing/render_face_detections.h>
 #include <dlib/image_processing.h>
-#include <dlib/clustering.h>
-#include <dlib/string.h>
 #include <dlib/image_io.h>
 #include <dlib/gui_widgets.h>
 #include <dlib/dnn.h>
 #include <dlib/image_transforms.h>
-#include <dlib/geometry/vector.h>
-#include <dlib/matrix.h>
 #include <cstdlib>
-#include <fstream>
-#include <sstream>
 #include <iostream>
 #include <stdio.h>    /* Standard input/output definitions */
-#include <stdlib.h>
-#include <sstream>
 #include <string>
-#include <stdint.h>   /* Standard types */
 #include <string.h>   /* String function definitions */
 #include <unistd.h>   /* UNIX standard function definitions */
 #include <fcntl.h>    /* File control definitions */
-#include <errno.h>    /* Error number definitions */
 #include <termios.h>  /* POSIX terminal control definitions */
-
 /*__________ RPLIDAR __________*/
 #include <rplidar.h>
 #include <cmath>
