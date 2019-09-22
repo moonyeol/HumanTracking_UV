@@ -6,6 +6,7 @@
 //컴파일 방
 //g++ -std=c++11 -O3 -I.. /home/eon/dlib/dlib/all/source.cpp -lpthread -lX11 -ljpeg -DDLIB_JPEG_SUPPORT -o main main.cpp $(pkg-config opencv4 --libs --cflags)
 
+
 #include <opencv4/opencv2/highgui/highgui.hpp>
 #include <opencv4/opencv2/highgui.hpp>
 #include <opencv4/opencv2/videoio.hpp>
@@ -50,8 +51,6 @@
 #include <termios.h>  /* POSIX terminal control definitions */
 #include <sys/ioctl.h>
 #include <getopt.h>
-
-char outputBehavior(char , char , int);
 
 using namespace cv;
 using namespace cv::dnn;
@@ -551,8 +550,6 @@ int main(int argc, char **argv )
                         }
                     }
 
-                    outputBehavior(data, data, );
-
                     //cout<<"data = "<<data<<endl;
                     names.push_back(name);
                 }
@@ -617,57 +614,5 @@ int main(int argc, char **argv )
     // DESTROY WINDOWS UPON END OF EXECUTION.
     close(fd);
     cv::destroyWindow("HumanTrackingUV");
+    return 0;
 }
-
-
-/*__________ UGV의 이동 우선순위 제어함수 __________*/
-
-char outputBehavior(char detectPosition = NULL, char platformMove = 's', int distanceRPLIDAR[4]) {
-
-    // REFERENCE
-    /*
-        >> detectPostion: 영상에 탐지된 대상자가 왼쪽(l) 혹은 오른쪽(r)에 있는지 알려주는 파라미터.
-        >> platformMove: 영상에 탐지된 대상자를 기반으로 전진(g), 후진(b), 좌회전(l), 우회전(r), 혹은 정지(s)하는지 알려주는 파라미터.
-        >> distanceRPLIDAR = 전방으로 시작으로 시계방향으로 거리를 알려주는 파라미터; {전방, 우, 우X2, ..., 우X(n-1), 후방, 좌X(n-1),  ... , 좌X2, 좌}.
-    */
-    
-    // 인식된 물체가 카메라의 왼쪽 혹은 오른쪽 가장자리에 있는지에 따라 플랫폼을 해당 방향으로 회전한다.
-    switch(detectPosition){
-        case 'l':
-            platformMove = 'l';
-            break;
-        
-        case 'r':
-            platformMove = 'r';
-            break;
-        // Defualt을 미지정으로 직진, 후진, 혹은 정지한 플랫폼은 현 상태를 유지한다.
-    }
-
-    // 장애물 기준 거리를 300mm, 즉 0.3미터로 잡는다.
-    #define STOP 300
-
-    // 방향을 틀었을 때, 최소한 0.5미터의 여유가 있을 때로 선택한다.
-    #define DIST_REF 500
-
-    int directionNumber  = sizeof(distanceRPLIDAR)/sizeof(int);
-
-    // 전방에 장애물이 존재할 경우.
-    if (distanceRPLIDAR[0] <= STOP){
-
-        // 전 방향의 거리여부를 앞에서부터 뒤로 좌우를 동시에 확인한다 (후방 제외).
-        for (int i = 1; i < directionNumber/2; i++){
-
-            // 오른쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 왼쪽보다 거리적 여유가 많을 시 오른쪽으로 회전한다.
-            if (distanceRPLIDAR[i] > DIST_REF && distanceRPLIDAR[i] > distanceRPLIDAR[directionNumber - i]) return 'r';
-            // 반면 왼쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 오른쪽보다 거리적 여유가 많을 시에는 왼쪽으로 회전한다.
-            else if(distanceRPLIDAR[directionNumber - i] > DIST_REF && distanceRPLIDAR[i] < distanceRPLIDAR[directionNumber - i]) return 'l';
-        }
-    }
-    
-    // 위의 조건문을 만족하지 않았다는 것은 정해진 기준의 여유보다 거리가 적다는 의미이다.
-
-    // 후방 거리여부를 확인하고, 전방향이 막혀 있으면 움직이지 않는다.
-    if (distanceRPLIDAR[directionNumber/2] <= DIST_REF) return platformMove = 'b';
-    else return platformMove = 's';
-}
-    
