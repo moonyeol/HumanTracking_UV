@@ -705,7 +705,7 @@ int main(int argc, char **argv ) {
                     
                     /*__________ RPLIDAR 행동교정 함수 __________*/
                     data = rplidarBehavior(data, distances);
-                    write(fd, data, 1);
+                    write(fd, data);
                     
                     //cout<<"data = "<<data<<endl;
                     names.push_back(name);
