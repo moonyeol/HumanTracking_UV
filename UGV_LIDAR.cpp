@@ -230,13 +230,15 @@ int main(int argc, char **argv ) {
         perror("init_serialport: Couldn't set term attributes");
         return -1;
     }
+
+    // RPLIDAR A1과 통신을 위한 장치 드라이버 생성. 제어는 드라이버를 통해서 진행된다: 예. rplidarA1 -> functionName().
+    RPlidarDriver * rplidarA1 = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
         
     try {   // TRY BLOCK CODE START
         
         /*__________ [START]: RPLIDAR A1 센서 제어 관련 설정 __________*/
-        // RPLIDAR A1과 통신을 위한 장치 드라이버 생성. 제어는 드라이버를 통해서 진행된다: 예. rplidarA1 -> functionName().
+
         // 배열 <distances>는 각 방향마다 가지는 최소 스캔 결과값을 포함한다.
-        RPlidarDriver * rplidarA1 = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
         int distances[DIRECTION]={0};
             
         // 시리얼 포트 경로 "/dev/ttyUSB0"를 통해
