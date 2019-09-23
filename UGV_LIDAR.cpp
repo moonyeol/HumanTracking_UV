@@ -808,18 +808,18 @@ char rplidarBehavior(/*char detectPosition, */char* platformMove, int *distanceR
 
             // 오른쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 왼쪽보다 거리적 여유가 많을 시 오른쪽으로 회전한다.
             if ((*(distanceRPLIDAR + i) > DIST_REF && *(distanceRPLIDAR + i) > *(distanceRPLIDAR + (DIRECTION - i))) || *(distanceRPLIDAR + i) == 0)
-            {platformMove = RIGHT; return platformMove;}
+            {platformMove = RIGHT; return *platformMove;}
             // 반면 왼쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 오른쪽보다 거리적 여유가 많을 시에는 왼쪽으로 회전한다.
             else if((*(distanceRPLIDAR + (DIRECTION - i)) > DIST_REF  && *(distanceRPLIDAR + i) < *(distanceRPLIDAR + (DIRECTION - i))) || *(distanceRPLIDAR + (DIRECTION - i)) == 0 )
-            {platformMove = LEFT; return platformMove;}
+            {platformMove = LEFT; return *platformMove;}
         }
 
         // 위의 조건문을 만족하지 않았다는 것은 정해진 기준의 여유보다 거리가 적다는 의미이다.
 
         // 후방 거리여부를 확인하고, 전방향이 막혀 있으면 움직이지 않는다.
-        if (*(distanceRPLIDAR + (DIRECTION/2)) <= DIST_REF) {platformMove = BACK; return platformMove;}
-        else {platformMove = STOP; return platformMove;}
+        if (*(distanceRPLIDAR + (DIRECTION/2)) <= DIST_REF) {platformMove = BACK; return *platformMove;}
+        else {platformMove = STOP; return *platformMove;}
     }
     
-    return platformMove;
+    return *platformMove;
 }
