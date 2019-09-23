@@ -40,6 +40,9 @@ using namespace dlib;
 using namespace std;
 using namespace rp::standalone::rplidar;
 
+#define CYCLE 360       // 한 사이클은 360도.
+#define DIRECTION 4     // 이동방향 개수.
+
 #define LEFT 'l'
 #define RIGHT 'r'
 #define FRONT 'g'
@@ -235,8 +238,6 @@ int main(int argc, char **argv ) {
         // 배열 <distances>는 각 방향마다 가지는 최소 스캔 결과값을 포함한다.
         RPlidarDriver * rplidarA1 = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
         int distances[DIRECTION]={0};
-        #define CYCLE 360       // 한 사이클은 360도.
-        #define DIRECTION 4     // 이동방향 개수.
             
         // 시리얼 포트 경로 "/dev/ttyUSB0"를 통해
         /*
