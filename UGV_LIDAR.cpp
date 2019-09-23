@@ -649,13 +649,13 @@ int main(int argc, char **argv ) {
                         cout<<"size = "<<size<<endl;
                         //if(xcenter <100)
 //                         {
-//                             data="l";
+//                             data='l';
 //                             //cout<<"data = "<<data<<endl;
                             
 //                         }
 //                         else if(xcenter > 520)
 //                         {
-//                             data="r";
+//                             data='r';
 //                             //cout<<"data = "<<data<<endl;
                            
 //                         }
@@ -677,9 +677,9 @@ int main(int argc, char **argv ) {
                                 //cout<<"저장값 : "<<tempsize<<endl;
                                 //cout<<"data = "<<data<<endl;
                                 tempsize = size;
-                                data = "b";
+                                data = 'b';
 
-                                //data= "g";
+                                //data= 'g';
                                 //write(fd, data, strlen(data));
                                 
                             }
@@ -688,15 +688,15 @@ int main(int argc, char **argv ) {
                                 cout<<"저장값 : "<<tempsize<<endl;
                                 //cout<<"data = "<<data<<endl;
                                 tempsize = size;
-                                data = "g";
+                                data = 'g';
 
-                                //data = "b";
+                                //data = 'b';
                                 //write(fd, data, strlen(data));
                                 
                             }
                             
                            else{
-                            data="s";
+                            data='s';
                             //cout<<"data = "<<data<<endl;
                             
                            }
