@@ -659,7 +659,7 @@ int main(int argc, char **argv ) {
 //                             //cout<<"data = "<<data<<endl;
                            
 //                         }
-                        //write(fd, data, strlen(data));
+                        //write(fd, data, 1);
 
                         //if (xcenter!=320&&ycenter!= 240)
                         //{
@@ -680,7 +680,7 @@ int main(int argc, char **argv ) {
                                 data = 'b';
 
                                 //data= 'g';
-                                //write(fd, data, strlen(data));
+                                //write(fd, data, 1);
                                 
                             }
                             else if(tempsize > size+5)
@@ -691,7 +691,7 @@ int main(int argc, char **argv ) {
                                 data = 'g';
 
                                 //data = 'b';
-                                //write(fd, data, strlen(data));
+                                //write(fd, data, 1);
                                 
                             }
                             
@@ -705,7 +705,7 @@ int main(int argc, char **argv ) {
                     
                     /*__________ RPLIDAR 행동교정 함수 __________*/
                     data = rplidarBehavior(data, distances);
-                    write(fd, data, strlen(data));
+                    write(fd, data, 1);
                     
                     //cout<<"data = "<<data<<endl;
                     names.push_back(name);
