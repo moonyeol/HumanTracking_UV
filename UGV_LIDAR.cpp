@@ -32,7 +32,7 @@
 #include <cmath>
 
 /*__________ RPLIDAR 행동교정 함수선언 __________*/
-char outputBehavior(/*char, */char, int*);
+char rplidarBehavior(/*char, */char, int*);
 
 using namespace cv;
 using namespace cv::dnn;
@@ -644,18 +644,19 @@ int main(int argc, char **argv ) {
                         long size = (locations[i].right() - locations[i].left());
                       
                         cout<<"size = "<<size<<endl;
-                        if(xcenter <100)
-                        {
-                            data="l";
-                            //cout<<"data = "<<data<<endl;
-                            write(fd, data, strlen(data));
-                        }
-                        else if(xcenter > 520)
-                        {
-                            data="r";
-                            //cout<<"data = "<<data<<endl;
-                            write(fd, data, strlen(data));
-                        }
+                        //if(xcenter <100)
+//                         {
+//                             data="l";
+//                             //cout<<"data = "<<data<<endl;
+                            
+//                         }
+//                         else if(xcenter > 520)
+//                         {
+//                             data="r";
+//                             //cout<<"data = "<<data<<endl;
+                           
+//                         }
+                        //write(fd, data, strlen(data));
 
                         //if (xcenter!=320&&ycenter!= 240)
                         //{
@@ -677,7 +678,7 @@ int main(int argc, char **argv ) {
 
                                 //data= "g";
                                 //write(fd, data, strlen(data));
-                                write(fd, data, strlen(data));
+                                
                             }
                             else if(tempsize > size+5)
                             {
@@ -688,19 +689,20 @@ int main(int argc, char **argv ) {
 
                                 //data = "b";
                                 //write(fd, data, strlen(data));
-                                write(fd, data, strlen(data));
+                                
                             }
                             
                            else{
                             data="s";
                             //cout<<"data = "<<data<<endl;
-                            write(fd,data,strlen(data));
+                            
                            }
                         }
                     }   // END OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
                     
                     /*__________ RPLIDAR 행동교정 함수 __________*/
-                    char data = outputBehavior(data, distances);
+                    data = rplidarBehavior(data, distances);
+                    write(fd, data, strlen(data));
                     
                     //cout<<"data = "<<data<<endl;
                     names.push_back(name);
