@@ -32,7 +32,7 @@
 #include <cmath>
 
 /*__________ RPLIDAR 행동교정 함수선언 __________*/
-char rplidarBehavior(/*char, */char, int*);
+char rplidarBehavior(/*char, */char*, int*);
 
 using namespace cv;
 using namespace cv::dnn;
@@ -43,11 +43,11 @@ using namespace rp::standalone::rplidar;
 #define CYCLE 360       // 한 사이클은 360도.
 #define DIRECTION 4     // 이동방향 개수.
 
-#define LEFT 'l'
-#define RIGHT 'r'
-#define FRONT 'g'
-#define BACK 'b'
-#define STOP 's'
+#define LEFT "l"
+#define RIGHT "r"
+#define FRONT "g"
+#define BACK "b"
+#define STOP "s"
 
 
 template <template <int,template<typename>class,int,typename> class block, int N, template<typename>class BN, typename SUBNET>
@@ -649,13 +649,13 @@ int main(int argc, char **argv ) {
                         cout<<"size = "<<size<<endl;
                         //if(xcenter <100)
 //                         {
-//                             data='l';
+//                             data="l";
 //                             //cout<<"data = "<<data<<endl;
                             
 //                         }
 //                         else if(xcenter > 520)
 //                         {
-//                             data='r';
+//                             data="r";
 //                             //cout<<"data = "<<data<<endl;
                            
 //                         }
@@ -677,9 +677,9 @@ int main(int argc, char **argv ) {
                                 //cout<<"저장값 : "<<tempsize<<endl;
                                 //cout<<"data = "<<data<<endl;
                                 tempsize = size;
-                                data = 'b';
+                                data = "b";
 
-                                //data= 'g';
+                                //data= "g";
                                 //write(fd, data, 1);
                                 
                             }
@@ -688,15 +688,15 @@ int main(int argc, char **argv ) {
                                 cout<<"저장값 : "<<tempsize<<endl;
                                 //cout<<"data = "<<data<<endl;
                                 tempsize = size;
-                                data = 'g';
+                                data = "g";
 
-                                //data = 'b';
+                                //data = "b";
                                 //write(fd, data, 1);
                                 
                             }
                             
                            else{
-                            data='s';
+                            data="s";
                             //cout<<"data = "<<data<<endl;
                             
                            }
@@ -705,7 +705,7 @@ int main(int argc, char **argv ) {
                     
                     /*__________ RPLIDAR 행동교정 함수 __________*/
                     data = rplidarBehavior(data, distances);
-                    write(fd, data, 8);
+                    write(fd, data, 1);
                     
                     //cout<<"data = "<<data<<endl;
                     names.push_back(name);
@@ -785,7 +785,7 @@ int main(int argc, char **argv ) {
 
 
 /*__________ RPLIDAR 행동교정 함수 정의 __________*/
-char rplidarBehavior(/*char detectPosition, */char platformMove, int *distanceRPLIDAR) {
+char rplidarBehavior(/*char detectPosition, */char* platformMove, int *distanceRPLIDAR) {
 
     // REFERENCE
     /*
@@ -808,17 +808,17 @@ char rplidarBehavior(/*char detectPosition, */char platformMove, int *distanceRP
 
             // 오른쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 왼쪽보다 거리적 여유가 많을 시 오른쪽으로 회전한다.
             if ((*(distanceRPLIDAR + i) > DIST_REF && *(distanceRPLIDAR + i) > *(distanceRPLIDAR + (DIRECTION - i))) || *(distanceRPLIDAR + i) == 0)
-                return platformMove = RIGHT;
+            {platformMove = RIGHT; return platformMove;}
             // 반면 왼쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 오른쪽보다 거리적 여유가 많을 시에는 왼쪽으로 회전한다.
             else if((*(distanceRPLIDAR + (DIRECTION - i)) > DIST_REF  && *(distanceRPLIDAR + i) < *(distanceRPLIDAR + (DIRECTION - i))) || *(distanceRPLIDAR + (DIRECTION - i)) == 0 )
-                return platformMove = LEFT;
+            {platformMove = LEFT; return platformMove;}
         }
 
         // 위의 조건문을 만족하지 않았다는 것은 정해진 기준의 여유보다 거리가 적다는 의미이다.
 
         // 후방 거리여부를 확인하고, 전방향이 막혀 있으면 움직이지 않는다.
-        if (*(distanceRPLIDAR + (DIRECTION/2)) <= DIST_REF) return platformMove = BACK;
-        else return platformMove = STOP;
+        if (*(distanceRPLIDAR + (DIRECTION/2)) <= DIST_REF) {platformMove = BACK; return platformMove;}
+        else {platformMove = STOP; return platformMove;}
     }
     
     return platformMove;
