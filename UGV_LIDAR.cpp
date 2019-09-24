@@ -582,7 +582,7 @@ int main(int argc, char **argv ) {
 
             //face recoginition 구현 중
             if(found) {
-                char data;
+                char* data;
 
                 matrix<rgb_pixel> img;
 //                cv::cuda::GpuMat rgb_frame;
