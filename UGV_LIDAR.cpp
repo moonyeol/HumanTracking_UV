@@ -32,7 +32,7 @@
 #include <cmath>
 
 /*__________ RPLIDAR 행동교정 함수선언 __________*/
-char rplidarBehavior(/*char, */char*, int*);
+char* outputBehavior(/*char, */char*, int*);
 
 using namespace cv;
 using namespace cv::dnn;
@@ -45,7 +45,7 @@ using namespace rp::standalone::rplidar;
 
 #define LEFT "l"
 #define RIGHT "r"
-#define FRONT "g"
+#define GO "g"
 #define BACK "b"
 #define STOP "s"
 
@@ -490,6 +490,9 @@ int main(int argc, char **argv ) {
                     // 현재 위상가ㅄ이 0이고 이전 위상가ㅄ이 1이면 방향 카운터를 증가시킨다.
                     // 반대로 설정하면 초반에 바로 (현재 = 1, 이전 = 0) 가ㅄ이 나올 수 있어 오류는 발생하지 않지만 첫 방향의 최소거리가 계산되지 않는다.
                     if (angleOFF == 0 && angleOFF_prev == 1) count++;
+                    
+                    // 처리되지 않은 나머지 전방 각도 당 거리를 계산하기 위하여 방향 카운터 초기화.
+                    if (count == DIRECTION) count = 0;
 
                     // 루프를 돌기 전에 현재 위상가ㅄ을 이전 위상가ㅄ으로 할당한다.
                     angleOFF_prev = angleOFF;
@@ -680,7 +683,7 @@ int main(int argc, char **argv ) {
                                 data = "b";
 
                                 //data= "g";
-                                //write(fd, data, 1);
+                                //write(fd, data, strlen(data));
                                 
                             }
                             else if(tempsize > size+5)
@@ -691,7 +694,7 @@ int main(int argc, char **argv ) {
                                 data = "g";
 
                                 //data = "b";
-                                //write(fd, data, 1);
+                                //write(fd, data, strlen(data));
                                 
                             }
                             
@@ -705,7 +708,7 @@ int main(int argc, char **argv ) {
                     
                     /*__________ RPLIDAR 행동교정 함수 __________*/
                     data = rplidarBehavior(data, distances);
-                    write(fd, data, 1);
+                    write(fd, data, strlen(data));
                     
                     //cout<<"data = "<<data<<endl;
                     names.push_back(name);
@@ -785,7 +788,7 @@ int main(int argc, char **argv ) {
 
 
 /*__________ RPLIDAR 행동교정 함수 정의 __________*/
-char rplidarBehavior(/*char detectPosition, */char* platformMove, int *distanceRPLIDAR) {
+char* outputBehavior(/*char detectPosition, */char* platformMove, int *distanceRPLIDAR) {
 
     // REFERENCE
     /*
@@ -801,25 +804,26 @@ char rplidarBehavior(/*char detectPosition, */char* platformMove, int *distanceR
     #define DIST_REF 500
 
     // 전방에 장애물이 존재할 경우 (0은 측정범위 밖).
-    if (0 < *distanceRPLIDAR && *distanceRPLIDAR <= DIST_STOP){
+    if (0 < *(distanceRPLIDAR + DIRECTION/2) && *(distanceRPLIDAR + DIRECTION/2) <= DIST_STOP){
 
         // 전 방향의 거리여부를 앞에서부터 뒤로 좌우를 동시에 확인한다 (후방 제외).
-        for (int i = 1; i < DIRECTION/2; i++){
+        for (int i = (DIRECTION/2) -1; i > 0; i--){
 
             // 오른쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 왼쪽보다 거리적 여유가 많을 시 오른쪽으로 회전한다.
             if ((*(distanceRPLIDAR + i) > DIST_REF && *(distanceRPLIDAR + i) > *(distanceRPLIDAR + (DIRECTION - i))) || *(distanceRPLIDAR + i) == 0)
-            {platformMove = RIGHT; return *platformMove;}
+                return LEFT;
             // 반면 왼쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 오른쪽보다 거리적 여유가 많을 시에는 왼쪽으로 회전한다.
             else if((*(distanceRPLIDAR + (DIRECTION - i)) > DIST_REF  && *(distanceRPLIDAR + i) < *(distanceRPLIDAR + (DIRECTION - i))) || *(distanceRPLIDAR + (DIRECTION - i)) == 0 )
-            {platformMove = LEFT; return *platformMove;}
+                return RIGHT;
         }
 
         // 위의 조건문을 만족하지 않았다는 것은 정해진 기준의 여유보다 거리가 적다는 의미이다.
 
         // 후방 거리여부를 확인하고, 전방향이 막혀 있으면 움직이지 않는다.
-        if (*(distanceRPLIDAR + (DIRECTION/2)) <= DIST_REF) {platformMove = BACK; return *platformMove;}
-        else {platformMove = STOP; return *platformMove;}
+        if (*(distanceRPLIDAR) <= DIST_REF) return BACK;
+        else return STOP;
     }
+    else if (platformMove != LEFT || platformMove != RIGHT) return GO;
     
-    return *platformMove;
+    return platformMove;
 }
