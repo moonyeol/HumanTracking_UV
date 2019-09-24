@@ -8,13 +8,13 @@
 #define BACK "b"
 #define STOP "s"
 
-char* outputBehavior(/*char, */char*, int*);
+char* rplidarBehavior(/*char, */char*, int*);
 
 int main() {
 
     int arr[4] = {250, 600, 700, 500};
 
-    char* direction = outputBehavior(GO, arr);
+    char* direction = rplidarBehavior(GO, arr);
 
     std::cout << direction << std::endl;
 
@@ -22,7 +22,7 @@ int main() {
 }
 
 
-char* outputBehavior(/*char detectPosition, */char* platformMove, int *distanceRPLIDAR) {
+char* rplidarBehavior(/*char detectPosition, */char* platformMove, int *distanceRPLIDAR) {
 
     // REFERENCE
     /*
