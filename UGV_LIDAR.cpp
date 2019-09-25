@@ -795,6 +795,8 @@ std::string rplidarBehavior(/*char detectPosition, */std::string platformMove, i
         >> distanceRPLIDAR = 전방으로 시작으로 시계방향으로 거리를 알려주는 파라미터; {전방, 우, 우X2, ..., 우X(n-1), 후방, 좌X(n-1),  ... , 좌X2, 좌}. 0은 측정범위 밖.
     */
 
+    std::cout << "===============" << std::endl << "FRONT: " << *(distanceRPLIDAR+2) << std::endl << "BACK: " << *(distanceRPLIDAR) << std::endl << "LEFT" << *(distanceRPLIDAR+1) << std::endl << "RIGHT: " << *(distanceRPLIDAR+3) << std::endl;
+        
     // 장애물 기준 거리를 300mm, 즉 0.3미터로 잡는다.
     #define DIST_STOP 300
 
