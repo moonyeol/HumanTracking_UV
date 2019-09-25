@@ -236,7 +236,7 @@ int main(int argc, char **argv ) {
         
     try {   // TRY BLOCK CODE START: WHOLE PROCESS FOR DETECTION AND AUTOMATION.
         
-        /*__________ [START]: RPLIDAR A1 센서 제어 관련 설정 __________*/
+        /*__________ [START]: RPLIDAR A1 센서 제어 관련 설정: GKO95 작성 __________*/
 
         // 배열 <distances>는 각 방향마다 가지는 최소 스캔 결과값을 포함한다.
         int distances[DIRECTION]={0};
@@ -435,7 +435,7 @@ int main(int argc, char **argv ) {
         // 웹캠으로 촬영이 진행되는 동안...
         while(cap.isOpened()){
             
-            /*__________ [START]: RPLIDAR A1 센서 제어 __________*/
+            /*__________ [START]: RPLIDAR A1 센서 제어: GKO95 작성 __________*/
                 
             // 스캔 데이터인 노드(node)를 담을 수 있는 배열을 생성한다.
             rplidar_response_measurement_node_hq_t nodes[8192];
@@ -785,7 +785,7 @@ int main(int argc, char **argv ) {
 }
 
 
-/*__________ RPLIDAR 행동교정 함수 정의 __________*/
+/*__________ RPLIDAR 행동교정 함수 정의: GKO95 작성 __________*/
 char* rplidarBehavior(/*char detectPosition, */char* platformMove, int *distanceRPLIDAR) {
 
     // REFERENCE
@@ -801,27 +801,33 @@ char* rplidarBehavior(/*char detectPosition, */char* platformMove, int *distance
     // 방향을 틀었을 때, 최소한 0.5미터의 여유가 있을 때로 선택한다.
     #define DIST_REF 500
 
-    // 전방에 장애물이 존재할 경우 (0은 측정범위 밖).
-    if (0 < *(distanceRPLIDAR + DIRECTION/2) && *(distanceRPLIDAR + DIRECTION/2) <= DIST_STOP){
+    // 정지 신호에는 무조건 정지한다.
+    if (platformMove == STOP) return STOP;
+
+    // 전방에 장애물이 존재할 경우 (0은 측정범위 밖); 후진과 정지는 따로 조건문이 주어져 있으므로 고려하지 않는다.
+    if (0 < *(distanceRPLIDAR + DIRECTION/2) && *(distanceRPLIDAR + DIRECTION/2) <= DIST_STOP && platformMove != STOP && platformMove != BACK){
 
         // 전 방향의 거리여부를 앞에서부터 뒤로 좌우를 동시에 확인한다 (후방 제외).
         for (int i = (DIRECTION/2) -1; i > 0; i--){
 
             // 오른쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 왼쪽보다 거리적 여유가 많을 시 오른쪽으로 회전한다.
-            if ((*(distanceRPLIDAR + i) > DIST_REF && *(distanceRPLIDAR + i) > *(distanceRPLIDAR + (DIRECTION - i))) || *(distanceRPLIDAR + i) == 0)
+            if ((*(distanceRPLIDAR + i) > DIST_REF && *(distanceRPLIDAR + i) >= *(distanceRPLIDAR + (DIRECTION - i)) && *(distanceRPLIDAR + (DIRECTION - i)) != 0) || *(distanceRPLIDAR + i) == 0)
                 return LEFT;
             // 반면 왼쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 오른쪽보다 거리적 여유가 많을 시에는 왼쪽으로 회전한다.
-            else if((*(distanceRPLIDAR + (DIRECTION - i)) > DIST_REF  && *(distanceRPLIDAR + i) < *(distanceRPLIDAR + (DIRECTION - i))) || *(distanceRPLIDAR + (DIRECTION - i)) == 0 )
+            else if((*(distanceRPLIDAR + (DIRECTION - i)) > DIST_REF  && *(distanceRPLIDAR + i) <= *(distanceRPLIDAR + (DIRECTION - i)) &&  *(distanceRPLIDAR + i) != 0 ) || *(distanceRPLIDAR + (DIRECTION - i)) == 0 )
                 return RIGHT;
         }
 
         // 위의 조건문을 만족하지 않았다는 것은 정해진 기준의 여유보다 거리가 적다는 의미이다.
 
         // 후방 거리여부를 확인하고, 전방향이 막혀 있으면 움직이지 않는다.
-        if (*(distanceRPLIDAR) <= DIST_REF) return BACK;
+        if (*(distanceRPLIDAR) > DIST_REF) return BACK;
         else return STOP;
     }
-    else if (platformMove != LEFT || platformMove != RIGHT) return GO;
+
+    // 뒤에 장애물이 있으면 뒤로 움직이는 신호에도 정지시킨다.
+    if (platformMove == BACK && *(distanceRPLIDAR) <= DIST_REF) return STOP;
     
+    // 아무런 조건을 만족하지 않으면 장애물의 구애를 받지 않는다는 의미로 신호대로 움직인다.
     return platformMove;
 }
