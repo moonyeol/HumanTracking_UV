@@ -32,7 +32,7 @@
 #include <cmath>
 
 /*__________ RPLIDAR 행동교정 함수선언 __________*/
-char* rplidarBehavior(/*char, */char*, int*);
+std::string rplidarBehavior(/*char, */std::string, int*);
 
 using namespace cv;
 using namespace cv::dnn;
@@ -579,7 +579,7 @@ int main(int argc, char **argv ) {
 
             //face recoginition 구현 중
             if(found) {
-                char* data;
+                std::string data;
 
                 matrix<rgb_pixel> img;
 //                cv::cuda::GpuMat rgb_frame;
@@ -786,7 +786,7 @@ int main(int argc, char **argv ) {
 
 
 /*__________ RPLIDAR 행동교정 함수 정의: GKO95 작성 __________*/
-char* rplidarBehavior(/*char detectPosition, */char* platformMove, int *distanceRPLIDAR) {
+std::string rplidarBehavior(/*char detectPosition, */std::string platformMove, int *distanceRPLIDAR) {
 
     // REFERENCE
     /*
