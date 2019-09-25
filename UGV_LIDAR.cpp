@@ -234,7 +234,7 @@ int main(int argc, char **argv ) {
     // RPLIDAR A1과 통신을 위한 장치 드라이버 생성. 제어는 드라이버를 통해서 진행된다: 예. rplidarA1 -> functionName().
     RPlidarDriver * rplidarA1 = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
         
-    try {   // TRY BLOCK CODE START
+    try {   // TRY BLOCK CODE START: WHOLE PROCESS FOR DETECTION AND AUTOMATION.
         
         /*__________ [START]: RPLIDAR A1 센서 제어 관련 설정 __________*/
 
@@ -407,20 +407,18 @@ int main(int argc, char **argv ) {
 
         // __________ PROCESS OF PERSON DETECTION USING EXISTING FRAMEWORK MODEL. __________ //
 
-        // PROTOTXT AND CAFFEMODEL IS A COUNTERPART OF CONFIG AND WEIGHT IN DARKNET;
+        // CAFFE의 PROTOTXT와 CAFFEMODEL는 DARKNET의 CONFIG와 WEIGHT 파일과 동일하다 종류의 파일이다;
         // ...FOR PERSON DETECTION (NOT A FACIAL DETECTION)
         String prototxt = "models/MobileNetSSD_deploy.prototxt";
         String model = "models/MobileNetSSD_deploy.caffemodel";
 
-
-
-        // ACQUIRE LIST OF CLASSES.
+        // 클래스 목록을 수집한다.
         /*
-            >> `cv::String::c_str()`: also available as "std::string::c_str()";
-                ...returns array with strings splitted on NULL (blank space, new line).
-            >> `cv::vector::push_back(<data>)`: push the data at the back end of the current last element.
-                ...just like a push-back of the stack data structure.
-                    Hence, the name of the classes are all stored in variable "classes".
+            >> `cv::String::c_str()`: "std::string::c_str()"로서도 함수가 존재;
+                ...NULL(즉, 띄어쓰기 혹은 줄바꿈)이 있을 때마다 문자열을 나누어 행렬로 반환.
+            >> `cv::vector::push_back(<data>)`: <data>를 현재 벡터의 맨 마지막으로 넣어준다.
+                ...마치 스택 자료구조의 PUSH-BACK이라고 생각하면 된다.
+                    결과적으로, 모든 클래스 종류는 "classes"라는 벡터 변수에 저장된다.
         */
         String classesFile = "names";
         ifstream ifs(classesFile.c_str());
@@ -429,13 +427,12 @@ int main(int argc, char **argv ) {
         while(getline(ifs,line))
             classes.push_back(line);
 
-        // IMPORT CAFFE CONFIG AND MODEL TO THE NEURAL NETWORK:
-        //  ...for a "PERSON DETECTION".
-
+        // CAFFE의 설정파일과 모델파일을 OpenCV에서 미리 준비된 신경망으로 불러 넣어준다:
+        // 이는 얼굴 탐지가 아닌 "사람 탐지"을 위해 사용된다.
         Net net1 = readNetFromCaffe(prototxt, model);
         net1.setPreferableTarget(DNN_TARGET_OPENCL);
 
-        // WHILE CAMERA IS OPENED...
+        // 웹캠으로 촬영이 진행되는 동안...
         while(cap.isOpened()){
             
             /*__________ [START]: RPLIDAR A1 센서 제어 __________*/
@@ -518,16 +515,16 @@ int main(int argc, char **argv ) {
             }
             /*__________ [END]: RPLIDAR A1 센서 제어 __________*/
                 
-            // VIDEOCAPTURE "CAPTURE" RETURN ITS FRAME TO MAT "FRAME".
+            // VIDEOCAPTURE 클래스의 "CAPTURE"는 촬영된 순간의 프레임을 cv::Mat 형태의 "FRAME" 오브젝트에 할당한다.
             cap >> frame;
             double t = cv::getTickCount();
             resize(frame,frame, Size(640,480));
 
-            // CONVERT FRAME TO PREPROCESSED "BLOB" FOR MODEL PREDICTION.
+            // 모델의 물체인식을 위해 cv::Mat 형태의 프레임을 "BLOB" 형태로 변형시킨다.
             /*
                 >> `blobFromImage(<input>, <output>, <scalefactor>, <size>, <mean>, <swapRB>, <crop>, <ddepth>)`
-                    ...(1/255): Scale the factors as to normalize RGB value from (0~255) to (0~1).
-                    ...cv::Size(300,300): resize the output blob to 300x300 as noted by model configuration .prototxt file.
+                    ...(1/255): 픽셀값 0~255를 정규화된 RGB 값 0~1로 만들기 위해 값을 스케일한다.
+                    ...cv::Size(300,300): 모델의 .prototxt 구성(설정)파일에서 언급한 Blob 크기를 맞추기 위해 출력되는 blob 사이즈를 300x300으로 변경.
             */
             blob = blobFromImage(frame, 0.007843, Size(300,300), 127.5);
 
@@ -748,18 +745,15 @@ int main(int argc, char **argv ) {
             fpsOpencvDNN = 1/tt_opencvDNN;
             putText(frame, format("OpenCV DNN ; FPS = %.2f",fpsOpencvDNN), Point(10, 50), FONT_HERSHEY_SIMPLEX, 1.4, Scalar(0, 0, 255), 4);
 
-
-            // SHOW CAPTURED VIDEO.
-
+            // 웹캠에서 촬영하는 영상을 보여준다; Enter 키를 누르면 종료.
             cv::imshow("HumanTrackingUV",frame);
-            if (cv::waitKey(30)==27)
-            {
-                break;
-            }
+            if (cv::waitKey(30)==13) break;
+                
         }// END OF WHILE LOOP
-    }// END OF TRY BLOCK
+            
+    }// END OF TRY BLOCK: WHOLE PROCESS FOR DETECTION AND AUTOMATION.
 
-        // EXCEPTION 1: NO LANDMARKING MODEL DETECTED.
+    // 예외처리 1: 랜드마크 마크 모델을 찾을 수 없습니다.
     catch(serialization_error& e)
     {
         cout << "You need dlib's default face landmarking model file to run this example." << endl;
@@ -767,13 +761,17 @@ int main(int argc, char **argv ) {
         cout << "   http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2" << endl;
         cout << endl << e.what() << endl;
     }
-        // EXCEPTION 2
+    
+    // 예외처리 2
     catch(exception& e)
     {
         cout << e.what() << endl;
     }
-    // DESTROY WINDOWS UPON END OF EXECUTION.
+        
+    // 영상인식과 자율주행이 모두 끝나면 R/W 파일을 닫는다.
     close(fd);
+        
+    // 영상인식과 자율주행이 모두 끝났으면 OpenCV 창을 닫는다.
     cv::destroyWindow("HumanTrackingUV");
     
     // RPLIDAR 모터 중지.
