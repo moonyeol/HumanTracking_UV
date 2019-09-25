@@ -1,0 +1,1 @@
+The directory "rplidar_sdk" includes header files and the library necessary to program and compile the source code exclusive for Linux OS. The source code for this files can be built from the repository [Slamtec/rplidar_sdk](https://github.com/Slamtec/rplidar_sdk).
