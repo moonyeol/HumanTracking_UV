@@ -355,7 +355,7 @@ int main(int argc, char **argv ) {
             >> `dlib::array<dlib::matrix<dlib::rgb_pixel>>`: dlib::matrix<dlib::rgb_pixel> has been discussed above.
                 ...Since dlib::array store rank-1 tensor, the parameterized type is to store multiple number of image data in a list.
         */
-        dlib::array<matrix<rgb_pixel>> faces;
+//        dlib::array<matrix<rgb_pixel>> faces;
 
         // STORES FACIAL IMAGE CHIP(AKA. FACIAL PORTION OF CROPPED IMAGE) FOR FACIAL RECOGNITION.
         /*
@@ -375,7 +375,7 @@ int main(int argc, char **argv ) {
 //        matrix<rgb_pixel> user_img;
 //        load_image(user_img, "user.jpg");
 
-        Mat user_img = cv.imread("./pic/user.jpg",cv.IMREAD_COLOR);
+        Mat user_img = cv::imread("./pic/user.jpg",cv::IMREAD_COLOR);
 //        for (auto face : detector(user_img)) {
 //            auto shape = pose_model(user_img, face);
 //            matrix<rgb_pixel> face_chip;
@@ -384,8 +384,8 @@ int main(int argc, char **argv ) {
 //        }
 //        dlib::array<matrix<rgb_pixel>>* landMark = faceLandMark(detector(user_img));
 
-        std::vector<dlib::rectangle> locations = faceDetection(user_img,net2);
-        dlib::array<matrix<rgb_pixel>>* landMark = faceLandMark(locations);
+        std::vector<dlib::rectangle>& locations = faceDetection(user_img,net2);
+        dlib::array<matrix<rgb_pixel>>& faces = faceLandMark(locations);
 
         // CREATE A VARIALBE "face_detected_user" FOR FUTURE FACIAL COMPARISON.
         /*
@@ -394,7 +394,8 @@ int main(int argc, char **argv ) {
             >> `net_recognition(<input_data>,<batch_size>)`: uncertain of a purpose of a <batch_size> is; there's only one facial data here!
         */
         std::vector<matrix<float,0,1>> face_descriptors = net(faces,16);
-
+        delete(locations);
+        delete(faces);
 
 
         // __________ PROCESS OF PERSON DETECTION USING EXISTING FRAMEWORK MODEL. __________ //
@@ -577,7 +578,7 @@ int main(int argc, char **argv ) {
 
 
 
-                    std::vector<dlib::rectangle> locations2 = faceDetection(frame, net2);
+                    std::vector<dlib::rectangle>& locations2 = faceDetection(frame, net2);
 
 //                int frameHeight = frame.rows;
 //                int frameWidth = frame.cols;
@@ -609,7 +610,7 @@ int main(int argc, char **argv ) {
 
 
 
-                    dlib::array<matrix<rgb_pixel>> faces2 = faceLandMark(locations);
+                    dlib::array<matrix<rgb_pixel>>& faces2 = faceLandMark(locations2);
 //                auto locations = detector(img);
 //                for (auto face : locations) {
 //                    auto shape = pose_model(img, face);
@@ -626,9 +627,9 @@ int main(int argc, char **argv ) {
                         name = "unknown";
                         if (length(face_descriptors[0] - face_descriptors2[i]) < 0.5) {
                             name = "user";
-                            long xcenter = (locations[i].right() + locations[i].left()) / 2;
-                            long ycenter = (locations[i].bottom() + locations[i].top()) / 2;
-                            long size = (locations[i].right() - locations[i].left());
+                            long xcenter = (locations2[i].right() + locations2[i].left()) / 2;
+                            long ycenter = (locations2[i].bottom() + locations2[i].top()) / 2;
+                            long size = (locations2[i].right() - locations2[i].left());
 
                             cout << "size = " << size << endl;
                             //if(xcenter <100)
@@ -692,13 +693,14 @@ int main(int argc, char **argv ) {
 
 
                     for (int i = 0; i < locations.size(); i++) {
-                        cv::rectangle(frame, Point(locations[i].left(), locations[i].top()),
-                                      Point(locations[i].right(), locations[i].bottom()), Scalar(0, 255, 0), 2);
+                        cv::rectangle(frame, Point(locations2[i].left(), locations2[i].top()),
+                                      Point(locations2[i].right(), locations2[i].bottom()), Scalar(0, 255, 0), 2);
                         putText(frame, names[i], Point(locations[i].left() + 6, locations[i].top() - 6),
                                 FONT_HERSHEY_DUPLEX, 1.0, Scalar(255, 255, 255), 2);
                     }
 
-
+                    delete(faces2);
+                    delete(locations2);
                 }
 
 
@@ -716,6 +718,7 @@ int main(int argc, char **argv ) {
             cv::imshow("HumanTrackingUV",frame);
             if (cv::waitKey(30)==13) break;
                 count++;
+
         }// END OF WHILE LOOP
             
     }// END OF TRY BLOCK: WHOLE PROCESS FOR DETECTION AND AUTOMATION.
