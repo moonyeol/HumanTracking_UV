@@ -375,7 +375,7 @@ int main(int argc, char **argv ) {
 //        matrix<rgb_pixel> user_img;
 //        load_image(user_img, "user.jpg");
 
-        Mat user_img = cv2.imread("./pic/user.jpg",cv2.IMREAD_COLOR);
+        Mat user_img = cv.imread("./pic/user.jpg",cv.IMREAD_COLOR);
 //        for (auto face : detector(user_img)) {
 //            auto shape = pose_model(user_img, face);
 //            matrix<rgb_pixel> face_chip;
@@ -384,8 +384,8 @@ int main(int argc, char **argv ) {
 //        }
 //        dlib::array<matrix<rgb_pixel>>* landMark = faceLandMark(detector(user_img));
 
-        std::vector<dlib::rectangle> locations = faceDetection(user_img);
-        dlib::array<matrix<rgb_pixel>>* landMark = faceLandMark();
+        std::vector<dlib::rectangle> locations = faceDetection(user_img,net2);
+        dlib::array<matrix<rgb_pixel>>* landMark = faceLandMark(locations);
 
         // CREATE A VARIALBE "face_detected_user" FOR FUTURE FACIAL COMPARISON.
         /*
@@ -820,7 +820,7 @@ std::vector<dlib::rectangle>& faceDetection(Mat& frame, Net& net){
 
 
     net.setInput(inputBlob,"data");
-    cv::Mat detection = net2.forward("detection_out");
+    cv::Mat detection = net.forward("detection_out");
 
     cv::Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
 
