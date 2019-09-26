@@ -566,11 +566,9 @@ int main(int argc, char **argv ) {
             if(count%3==0) {
                 //face recoginition 구현 중
                 if (found) {
-<<<<<<< HEAD
-                    std::string data = "s";
-=======
-                    char* data;
->>>>>>> 05ead08a5c9e93056b85be8a32f98b44bca7472a
+
+                    char* data = "s";
+
 
 //                matrix<rgb_pixel> img;
 //                cv::cuda::GpuMat rgb_frame;
