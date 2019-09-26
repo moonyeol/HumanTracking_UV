@@ -385,7 +385,7 @@ int main(int argc, char **argv ) {
 //        dlib::array<matrix<rgb_pixel>>* landMark = faceLandMark(detector(user_img));
 
         std::vector<dlib::rectangle>& locations = faceDetection(user_img,net2);
-        dlib::array<matrix<rgb_pixel>>& faces = faceLandMark(locations);
+        dlib::array<matrix<rgb_pixel>>& faces = faceLandMark(user_img,locations);
 
         // CREATE A VARIALBE "face_detected_user" FOR FUTURE FACIAL COMPARISON.
         /*
@@ -610,7 +610,7 @@ int main(int argc, char **argv ) {
 
 
 
-                    dlib::array<matrix<rgb_pixel>>& faces2 = faceLandMark(locations2);
+                    dlib::array<matrix<rgb_pixel>>& faces2 = faceLandMark(frame,locations2);
 //                auto locations = detector(img);
 //                for (auto face : locations) {
 //                    auto shape = pose_model(img, face);
