@@ -41,7 +41,7 @@ using namespace rp::standalone::rplidar;
 
 /*__________ RPLIDAR 행동교정 함수선언 __________*/
 std::string rplidarBehavior(/*char, */std::string, int*);
-dlib::array<matrix<rgb_pixel>>& faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations);
+dlib::array<matrix<rgb_pixel>>& faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations, shape_predictor& pose_model);
 std::vector<dlib::rectangle>& faceDetection(Mat& frame, Net& net);
 bool humanDetection(Mat& frame, Net& net, std::vector<string> classes);
 
@@ -802,10 +802,10 @@ std::string rplidarBehavior(/*char detectPosition, */std::string platformMove, i
     return platformMove;
 }
 
-dlib::array<matrix<rgb_pixel>>& faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations) {
+dlib::array<matrix<rgb_pixel>>& faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations, shape_predictor& pose_model) {
     matrix<rgb_pixel> img;
     dlib::assign_image(img, dlib::cv_image<rgb_pixel>(frame));
-    dlib::array<matrix<rgb_pixel>>* result = new dlib::array<matrix<rgb_pixel>>;
+    dlib::array<matrix<rgb_pixel>>& result = new dlib::array<matrix<rgb_pixel>>;
     for (auto face : locations) {
         auto shape = pose_model(img, face);
         matrix<rgb_pixel> face_chip;
@@ -816,7 +816,7 @@ dlib::array<matrix<rgb_pixel>>& faceLandMark(Mat& frame,std::vector<dlib::rectan
 }
 
 std::vector<dlib::rectangle>& faceDetection(Mat& frame, Net& net){
-    std::vector<dlib::rectangle>* locations = new std::vector<dlib::rectangle>;
+    std::vector<dlib::rectangle>& locations = new std::vector<dlib::rectangle>;
     int frameHeight = frame.rows;
     int frameWidth = frame.cols;
 
