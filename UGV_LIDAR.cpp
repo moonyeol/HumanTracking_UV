@@ -823,7 +823,7 @@ std::string rplidarBehavior(/*char detectPosition, */std::string platformMove, i
         // 위의 조건문을 만족하지 않았다는 것은 정해진 기준의 여유보다 거리가 적다는 의미이다.
 
         // 후방 거리여부를 확인하고, 전방향이 막혀 있으면 움직이지 않는다.
-        if (*(distanceRPLIDAR) > DIST_REF) return BACK;
+        if (*(distanceRPLIDAR) > DIST_REF || *(distanceRPLIDAR) == 0 ) return BACK;
         else return STOP;
     }
 
