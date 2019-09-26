@@ -31,17 +31,20 @@
 #include <rplidar.h>
 #include <cmath>
 
-/*__________ RPLIDAR 행동교정 함수선언 __________*/
-std::string rplidarBehavior(/*char, */std::string, int*);
-dlib::array<matrix<rgb_pixel>>& faceLandMark(std::vector<dlib::rectangle> locations);
-std::vector<dlib::rectangle>& faceDetection(Mat& frame, Net& net);
-bool humanDetection(Mat& frame, Net& net, std::vector<string> classes);
 
 using namespace cv;
 using namespace cv::dnn;
 using namespace dlib;
 using namespace std;
 using namespace rp::standalone::rplidar;
+
+
+/*__________ RPLIDAR 행동교정 함수선언 __________*/
+std::string rplidarBehavior(/*char, */std::string, int*);
+dlib::array<matrix<rgb_pixel>>& faceLandMark(std::vector<dlib::rectangle> locations);
+std::vector<dlib::rectangle>& faceDetection(Mat& frame, Net& net);
+bool humanDetection(Mat& frame, Net& net, std::vector<string> classes);
+
 
 #define CYCLE 360       // 한 사이클은 360도.
 #define DIRECTION 4     // 이동방향 개수.
