@@ -891,5 +891,5 @@ bool humanDetection(Mat& frame, Net& net, std::vector<string> classes){
 
         }
     }
-    return found
+    return found;
 }
