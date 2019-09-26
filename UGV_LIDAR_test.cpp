@@ -6,7 +6,7 @@
 //컴파일 방
 //g++ -std=c++11 -O3 -I.. /home/eon/dlib/dlib/all/source.cpp -lpthread -lX11 -ljpeg -DDLIB_JPEG_SUPPORT -o main main.cpp $(pkg-config opencv4 --libs --cflags)
 
-
+#include <opencv4/opencv2/highgui.hpp>
 #include <opencv4/opencv2/highgui/highgui.hpp>
 #include <opencv4/opencv2/imgproc.hpp>
 #include <opencv4/opencv2/dnn/dict.hpp>
@@ -97,8 +97,8 @@ const float confidenceThreshold = 0.7;
 const cv::Scalar meanVal(104.0, 177.0, 123.0);
 
 
-const std::string caffeConfigFile = "./models/deploy.prototxt";
-const std::string caffeWeightFile = "./models/res10_300x300_ssd_iter_140000_fp16.caffemodel";
+const std::string caffeConfigFile = "models/deploy.prototxt";
+const std::string caffeWeightFile = "models/res10_300x300_ssd_iter_140000_fp16.caffemodel";
 long tempsize=0;
 
 
@@ -375,7 +375,7 @@ int main(int argc, char **argv ) {
 //        matrix<rgb_pixel> user_img;
 //        load_image(user_img, "user.jpg");
 
-        Mat user_img = cv::imread("./pic/user.jpg",cv::IMREAD_COLOR);
+        Mat user_img = cv::imread("pic/user.jpg",cv::IMREAD_COLOR);
 //        for (auto face : detector(user_img)) {
 //            auto shape = pose_model(user_img, face);
 //            matrix<rgb_pixel> face_chip;
@@ -566,7 +566,7 @@ int main(int argc, char **argv ) {
             if(count%3==0) {
                 //face recoginition 구현 중
                 if (found) {
-                    std::string data;
+                    std::string data = "s";
 
 //                matrix<rgb_pixel> img;
 //                cv::cuda::GpuMat rgb_frame;
