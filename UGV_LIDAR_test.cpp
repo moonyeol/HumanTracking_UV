@@ -40,7 +40,7 @@ using namespace rp::standalone::rplidar;
 
 
 /*__________ RPLIDAR 행동교정 함수선언 __________*/
-std::string rplidarBehavior(/*char, */char*, int*);
+char* rplidarBehavior(/*char, */char*, int*);
 dlib::array<matrix<rgb_pixel>>& faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations, shape_predictor& pose_model);
 std::vector<dlib::rectangle>& faceDetection(Mat& frame, Net& net);
 bool humanDetection(Mat& frame, Net& net, std::vector<string> classes);
