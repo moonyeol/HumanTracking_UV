@@ -385,7 +385,7 @@ int main(int argc, char **argv ) {
 //        dlib::array<matrix<rgb_pixel>>* landMark = faceLandMark(detector(user_img));
 
         std::vector<dlib::rectangle>& locations = faceDetection(user_img,net2);
-        dlib::array<matrix<rgb_pixel>>& faces = faceLandMark(user_img,locations);
+        dlib::array<matrix<rgb_pixel>>& faces = faceLandMark(user_img,locations,pose_model);
 
         // CREATE A VARIALBE "face_detected_user" FOR FUTURE FACIAL COMPARISON.
         /*
@@ -610,7 +610,7 @@ int main(int argc, char **argv ) {
 
 
 
-                    dlib::array<matrix<rgb_pixel>>& faces2 = faceLandMark(frame,locations2);
+                    dlib::array<matrix<rgb_pixel>>& faces2 = faceLandMark(frame,locations2,pose_model);
 //                auto locations = detector(img);
 //                for (auto face : locations) {
 //                    auto shape = pose_model(img, face);
@@ -805,7 +805,7 @@ std::string rplidarBehavior(/*char detectPosition, */std::string platformMove, i
 dlib::array<matrix<rgb_pixel>>& faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations, shape_predictor& pose_model) {
     matrix<rgb_pixel> img;
     dlib::assign_image(img, dlib::cv_image<rgb_pixel>(frame));
-    dlib::array<matrix<rgb_pixel>>& result = new dlib::array<matrix<rgb_pixel>>;
+    dlib::array<matrix<rgb_pixel>>& result = *new dlib::array<matrix<rgb_pixel>>;
     for (auto face : locations) {
         auto shape = pose_model(img, face);
         matrix<rgb_pixel> face_chip;
@@ -816,7 +816,7 @@ dlib::array<matrix<rgb_pixel>>& faceLandMark(Mat& frame,std::vector<dlib::rectan
 }
 
 std::vector<dlib::rectangle>& faceDetection(Mat& frame, Net& net){
-    std::vector<dlib::rectangle>& locations = new std::vector<dlib::rectangle>;
+    std::vector<dlib::rectangle>& locations = *new std::vector<dlib::rectangle>;
     int frameHeight = frame.rows;
     int frameWidth = frame.cols;
 
@@ -840,7 +840,7 @@ std::vector<dlib::rectangle>& faceDetection(Mat& frame, Net& net){
             int x2 = static_cast<int>(detectionMat.at<float>(i, 5) * frameWidth);
             int y2 = static_cast<int>(detectionMat.at<float>(i, 6) * frameHeight);
 
-            locations.push_back(new dlib::rectangle(x1,y1,x2,y2));
+            locations.push_back(dlib::rectangle(x1,y1,x2,y2));
         }
     }
     return locations;
