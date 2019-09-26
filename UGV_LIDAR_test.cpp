@@ -40,7 +40,7 @@ using namespace rp::standalone::rplidar;
 
 
 /*__________ RPLIDAR 행동교정 함수선언 __________*/
-std::string rplidarBehavior(/*char, */std::string, int*);
+std::string rplidarBehavior(/*char, */char*, int*);
 dlib::array<matrix<rgb_pixel>>& faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations, shape_predictor& pose_model);
 std::vector<dlib::rectangle>& faceDetection(Mat& frame, Net& net);
 bool humanDetection(Mat& frame, Net& net, std::vector<string> classes);
@@ -566,7 +566,7 @@ int main(int argc, char **argv ) {
             if(count%3==0) {
                 //face recoginition 구현 중
                 if (found) {
-                    std::string data;
+                    char* data;
 
 //                matrix<rgb_pixel> img;
 //                cv::cuda::GpuMat rgb_frame;
@@ -756,7 +756,7 @@ int main(int argc, char **argv ) {
 
 
 /*__________ RPLIDAR 행동교정 함수 정의: GKO95 작성 __________*/
-std::string rplidarBehavior(/*char detectPosition, */std::string platformMove, int *distanceRPLIDAR) {
+char* rplidarBehavior(/*char detectPosition, */char* platformMove, int *distanceRPLIDAR) {
 
     // REFERENCE
     /*
