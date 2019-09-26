@@ -41,7 +41,7 @@ using namespace rp::standalone::rplidar;
 
 /*__________ RPLIDAR 행동교정 함수선언 __________*/
 std::string rplidarBehavior(/*char, */std::string, int*);
-dlib::array<matrix<rgb_pixel>>& faceLandMark(std::vector<dlib::rectangle> locations);
+dlib::array<matrix<rgb_pixel>>& faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations);
 std::vector<dlib::rectangle>& faceDetection(Mat& frame, Net& net);
 bool humanDetection(Mat& frame, Net& net, std::vector<string> classes);
 
@@ -394,8 +394,8 @@ int main(int argc, char **argv ) {
             >> `net_recognition(<input_data>,<batch_size>)`: uncertain of a purpose of a <batch_size> is; there's only one facial data here!
         */
         std::vector<matrix<float,0,1>> face_descriptors = net(faces,16);
-        delete(locations);
-        delete(faces);
+        delete(&locations);
+        delete(&faces);
 
 
         // __________ PROCESS OF PERSON DETECTION USING EXISTING FRAMEWORK MODEL. __________ //
@@ -699,8 +699,8 @@ int main(int argc, char **argv ) {
                                 FONT_HERSHEY_DUPLEX, 1.0, Scalar(255, 255, 255), 2);
                     }
 
-                    delete(faces2);
-                    delete(locations2);
+                    delete(&faces2);
+                    delete(&locations2);
                 }
 
 
@@ -802,7 +802,9 @@ std::string rplidarBehavior(/*char detectPosition, */std::string platformMove, i
     return platformMove;
 }
 
-dlib::array<matrix<rgb_pixel>>& faceLandMark(std::vector<dlib::rectangle> locations) {
+dlib::array<matrix<rgb_pixel>>& faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations) {
+    matrix<rgb_pixel> img;
+    dlib::assign_image(img, dlib::cv_image<rgb_pixel>(frame));
     dlib::array<matrix<rgb_pixel>>* result = new dlib::array<matrix<rgb_pixel>>;
     for (auto face : locations) {
         auto shape = pose_model(img, face);
