@@ -6,6 +6,8 @@
 //컴파일 방
 //g++ -std=c++11 -O3 -I.. /home/eon/dlib/dlib/all/source.cpp -lpthread -lX11 -ljpeg -DDLIB_JPEG_SUPPORT -o main main.cpp $(pkg-config opencv4 --libs --cflags)
 
+#include <opencv4/opencv2/core.hpp>
+#include <opencv4/opencv2/opencv.hpp>
 #include <opencv4/opencv2/highgui.hpp>
 #include <opencv4/opencv2/highgui/highgui.hpp>
 #include <opencv4/opencv2/imgproc.hpp>
@@ -806,6 +808,8 @@ char* rplidarBehavior(/*char detectPosition, */char* platformMove, int *distance
 
 dlib::array<matrix<rgb_pixel>>& faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations, shape_predictor& pose_model) {
     matrix<rgb_pixel> img;
+    Mat rgb_frame;
+//    cvtColor(frame,rgb_frame,COLOR_BGR2RGB);
     dlib::assign_image(img, dlib::cv_image<rgb_pixel>(frame));
     dlib::array<matrix<rgb_pixel>>& result = *new dlib::array<matrix<rgb_pixel>>;
     for (auto face : locations) {
