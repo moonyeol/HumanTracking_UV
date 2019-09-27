@@ -257,7 +257,7 @@ class Serial_init {
     return fd;
     }
 
-    void option() {
+    void Serial_init::option() {
         struct termios toptions;
         toptions.c_cflag &= ~PARENB;//Enable parity generation on output and parity checking for input.
 
@@ -291,11 +291,11 @@ class Serial_init {
      class direction
 {
     private:
-        char* move;
+        char *move;
         long xcenter,tempsize = 0 ,size;
        
     public:
-    char* compare(long left, long right)
+    char* direction::compare(long left, long right)
     {
         size = right-left;
         xcenter = (right + left)/2;
@@ -494,7 +494,7 @@ int main(int argc, char **argv ) {
             
             
             rplidarA1.scan();
-            char* data = STOP;
+            char* move = STOP;
                 
             // VIDEOCAPTURE 클래스의 "CAPTURE"는 촬영된 순간의 프레임을 cv::Mat 형태의 "FRAME" 오브젝트에 할당한다.
             cap >> frame;
@@ -528,7 +528,9 @@ int main(int argc, char **argv ) {
                             name = "user";
                             direction direction;
                             move = direction.compare(locations2[i].left(), locations2[i].right());
-                    
+                        
+                        }
+
 
                     //cout<<"data = "<<data<<endl;
                     names.push_back(name);
