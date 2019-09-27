@@ -43,9 +43,6 @@ using namespace rp::standalone::rplidar;
 
 /*__________ RPLIDAR 행동교정 함수선언 __________*/
 char* rplidarBehavior(/*char, */char*, int*);
-dlib::array<matrix<rgb_pixel>> faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations, shape_predictor& pose_model);
-std::vector<dlib::rectangle> faceDetection(Mat& frame, Net& net);
-bool humanDetection(Mat& frame, Net& net, std::vector<string> classes);
 
 
 #define CYCLE 360       // 한 사이클은 360도.
@@ -126,11 +123,11 @@ private:
     std::vector<string> classes;
 public:
 
-    recognizer(String landmarkDat, Stirng frNetModel, string odConfigFile, string odWeightFile, String fdConfigFile, String fdWeightFile, String classesFile){
+    Recognizer(String landmarkDat, String frNetModel, string odConfigFile, string odWeightFile, String fdConfigFile, String fdWeightFile, String classesFile){
         deserialize(frNetModel) >> faceEncoder;
         deserialize(landmarkDat) >> pose_model;
         odNet = readNetFromCaffe(odConfigFile, odWeightFile);
-        fdnet = readNetFromCaffe(fdConfigFile, fdWeightFile)
+        fdnet = readNetFromCaffe(fdConfigFile, fdWeightFile);
         odNet.setPreferableTarget(DNN_TARGET_OPENCL);
         fdnet.setPreferableTarget(DNN_TARGET_OPENCL);
         this->classesFile = classesFile;
@@ -145,7 +142,7 @@ public:
 
     };
 
-    bool humanDetection(Mat& frame, std::vector<string> classes){
+    bool humanDetection(Mat& frame){
         bool found = true;
         // 모델의 물체인식을 위해 cv::Mat 형태의 프레임을 "BLOB" 형태로 변형시킨다.
         /*
@@ -156,7 +153,7 @@ public:
         cv::Mat blob = blobFromImage(frame, 0.007843, cv::Size(inWidth,inHeight), 127.5);
 
         // HAVE BLOB AS AN INPUT OF THE NEURAL NETWORK TO PASS THROUGH (PLACED BUT NOT PASSED THROUGH YET).
-        obnet.setInput(blob);
+        odNet.setInput(blob);
 
         // RUN FORWARD PASS TO COMPUTE OUTPUT OF LAYER WITH NAME "outNames": forward() [3/4]
         /*
@@ -168,7 +165,7 @@ public:
                 ...rank-3: number of object detected.
                 ...rank-4: element < ? >, <label>, <confidence>, <coord_x1>, <coord_y1>, <coord_x2>, <coord_y2>
         */
-        cv::Mat detection = obnet.forward();
+        cv::Mat detection = odNet.forward();
 
         for(int i =0; i < detection.size.p[2]; i++){
             float confidence = detection.at<float>(Vec<int,4>(0,0,i,2));
@@ -226,7 +223,7 @@ public:
         return locations;
     }
 
-    dlib::array<matrix<rgb_pixel>> faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations) {
+    dlib::array<matrix<rgb_pixel>> faceLandMark(Mat& frame,std::vector<dlib::rectangle>& locations) {
         matrix<rgb_pixel> img;
         cv::Mat rgb_frame;
         dlib::assign_image(img, dlib::cv_image<rgb_pixel>(frame));
@@ -240,12 +237,12 @@ public:
         return result;
     }
 
-    std::vector<matrix<float,0,1>> faceEncoding(dlib::array<matrix<rgb_pixel>> faces){
+    std::vector<matrix<float,0,1>> faceEncoding(dlib::array<matrix<rgb_pixel>>& faces){
         return faceEncoder(faces,16);
     }
 
-    float calDistance(<matrix<float, 0, 1> descriptors1, <matrix<float, 0, 1> descriptors2){
-        return length(descriptors1-descriptor2);
+    float calDistance(matrix<float, 0, 1> descriptors1, matrix<float, 0, 1> descriptors2){
+        return length(descriptors1-descriptors2);
     }
 
 };
@@ -604,7 +601,7 @@ int main(int argc, char **argv ) {
             double t = cv::getTickCount();
             resize(frame,frame, Size(640,480));
 
-            found = humanDetection(frame, net1, classes);
+            found = recognizer.humanDetection(frame);
 
 
 
@@ -615,10 +612,10 @@ int main(int argc, char **argv ) {
 
                     char* data;
 
-                    std::vector<dlib::rectangle> locations2 = faceDetection(frame, net2);
+                    std::vector<dlib::rectangle> locations2 = recognizer.faceDetection(frame);
 
 
-                    dlib::array<matrix<rgb_pixel>> faces2 = faceLandMark(frame,locations2,pose_model);
+                    dlib::array<matrix<rgb_pixel>> faces2 = recognizer.faceLandMark(frame,locations2);
 
                     std::vector<matrix<float, 0, 1>> face_descriptors2 = recognizer.faceEncoding(faces2);
                     std::vector<String> names;
@@ -806,99 +803,5 @@ char* rplidarBehavior(/*char detectPosition, */char* platformMove, int *distance
     return platformMove;
 }
 
-dlib::array<matrix<rgb_pixel>> faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations, shape_predictor& pose_model) {
-    matrix<rgb_pixel> img;
-    cv::Mat rgb_frame;
-//    cvtColor(frame,rgb_frame,COLOR_BGR2RGB);
-    dlib::assign_image(img, dlib::cv_image<rgb_pixel>(frame));
-//    dlib::array<matrix<rgb_pixel>>& result = *new dlib::array<matrix<rgb_pixel>>;
-    dlib::array<matrix<rgb_pixel>> result;
-    for (auto face : locations) {
-        auto shape = pose_model(img, face);
-        matrix<rgb_pixel> face_chip;
-        extract_image_chip(img, get_face_chip_details(shape, 150, 0.25), face_chip);
-        result.push_back(move(face_chip));
-    }
-    return result;
-}
 
-std::vector<dlib::rectangle> faceDetection(Mat& frame, Net& net){
-//    std::vector<dlib::rectangle>& locations = *new std::vector<dlib::rectangle>;
-    std::vector<dlib::rectangle> locations;
-    int frameHeight = frame.rows;
-    int frameWidth = frame.cols;
-
-
-    cv::Mat inputBlob = cv::dnn::blobFromImage(frame, inScaleFactor, cv::Size(inWidth, inHeight), meanVal, false, false);
-
-
-    net.setInput(inputBlob,"data");
-    cv::Mat detection = net.forward("detection_out");
-
-    cv::Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
-
-    for(int i = 0; i < detectionMat.rows; i++)
-    {
-        float confidence = detectionMat.at<float>(i, 2);
-
-        if(confidence > confidenceThreshold)
-        {
-            int x1 = static_cast<int>(detectionMat.at<float>(i, 3) * frameWidth);
-            int y1 = static_cast<int>(detectionMat.at<float>(i, 4) * frameHeight);
-            int x2 = static_cast<int>(detectionMat.at<float>(i, 5) * frameWidth);
-            int y2 = static_cast<int>(detectionMat.at<float>(i, 6) * frameHeight);
-
-            locations.push_back(dlib::rectangle(x1,y1,x2,y2));
-        }
-    }
-    return locations;
-}
-bool humanDetection(Mat& frame, Net& net, std::vector<string> classes){
-    // 모델의 물체인식을 위해 cv::Mat 형태의 프레임을 "BLOB" 형태로 변형시킨다.
-    /*
-        >> `blobFromImage(<input>, <output>, <scalefactor>, <size>, <mean>, <swapRB>, <crop>, <ddepth>)`
-            ...(1/255): 픽셀값 0~255를 정규화된 RGB 값 0~1로 만들기 위해 값을 스케일한다.
-            ...cv::Size(300,300): 모델의 .prototxt 구성(설정)파일에서 언급한 Blob 크기를 맞추기 위해 출력되는 blob 사이즈를 300x300으로 변경.
-    */
-    bool found = true;
-    cv::Mat blob = blobFromImage(frame, 0.007843, cv::Size(inWidth,inHeight), 127.5);
-
-    // HAVE BLOB AS AN INPUT OF THE NEURAL NETWORK TO PASS THROUGH (PLACED BUT NOT PASSED THROUGH YET).
-    net.setInput(blob);
-
-    // RUN FORWARD PASS TO COMPUTE OUTPUT OF LAYER WITH NAME "outNames": forward() [3/4]
-    /*
-        >> IF "outNames" is empty, the `cv::dnn::Net::forward()` runs forward pass for the whole network.
-            ...returns variable "outs" which contains blobs for first outputs of specified layers.
-        >> Variable "object_detection":
-            ...rank-1: None
-            ...rank-2: None
-            ...rank-3: number of object detected.
-            ...rank-4: element < ? >, <label>, <confidence>, <coord_x1>, <coord_y1>, <coord_x2>, <coord_y2>
-    */
-    cv::Mat detection = net.forward();
-
-    for(int i =0; i < detection.size.p[2]; i++){
-        float confidence = detection.at<float>(Vec<int,4>(0,0,i,2));
-
-        if(confidence > 0.6) {
-            int idx = detection.at<float>(Vec<int, 4>(0, 0, i, 1));
-            String label = classes[idx];
-
-            if (label.compare("person")) {
-                found =false;
-                continue;
-            }
-            int startX = (int) (detection.at<float>(Vec<int,4>(0,0,i,3)) * frame.cols);
-            int startY = (int) (detection.at<float>(Vec<int,4>(0,0,i,4)) * frame.rows);
-            int endX = (int) (detection.at<float>(Vec<int,4>(0,0,i,5)) * frame.cols);
-            int endY = (int) (detection.at<float>(Vec<int,4>(0,0,i,6)) * frame.rows);
-
-            cv::rectangle(frame, Point(startX,startY), Point(endX,endY),Scalar(0, 255, 0),2);
-            putText(frame, label, Point(startX, startY-15), FONT_HERSHEY_SIMPLEX, 0.45, Scalar(0,255,0),2);
-
-        }
-    }
-    return found;
-}
 
