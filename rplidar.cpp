@@ -57,19 +57,15 @@ rplidar::rplidar(): RESULT(NULL), rplidarDRIVER(NULL), platformMOVE(NULL)
 // DESTRUCTOR
 rplidar::~rplidar(){
 
-    // RPLIDAR A1 센서와 통신에 성공하였을 경우 정상적인 RPLIDAR A1 센서 종료 절차.
-    if(IS_OK(RESULT)) {
+    // RPLIDAR A1 센서의 모터 동작을 중지.
+    std::cout << "[INFO] STOP MOTOR:";
+    rplidarDRIVER -> stopMotor();
+    std::cout << " ...SUCCESS!" << std::endl;
 
-        // RPLIDAR A1 센서의 모터 동작을 중지.
-        std::cout << "[INFO] STOP MOTOR:";
-        rplidarDRIVER -> stopMotor();
-        std::cout << " ...SUCCESS!" << std::endl;
-
-        // RPLIDAR A1 센서와 장치 드라이버 통신 단절.
-        std::cout << "[INFO] DISCONNECTING:";
-        rplidarDRIVER -> disconnect();
-        std::cout << " ...SUCCESS!" << std::endl;
-    }
+    // RPLIDAR A1 센서와 장치 드라이버 통신 단절.
+    std::cout << "[INFO] DISCONNECTING:";
+    rplidarDRIVER -> disconnect();
+    std::cout << " ...SUCCESS!" << std::endl;
 
     // RPLIDAR A1과 통신을 위한 장치 드라이버 제거.
     std::cout << "[INFO] CLOSING DRIVER:";
@@ -96,28 +92,6 @@ void rplidar::scan() {
     rplidarDRIVER -> startScan(false, true, 0, &scanMode);
 }
 
-// 우선순위 결정 후 최종적으로 보내줄 이동신호를 반환한다.
-char* rplidar::returnMove(char* MOVE){
-    this->behavior(MOVE);
-    return platformMOVE;
-}
-
-// 계산된 거리와 최종 이동방향을 보여준다.
-void rplidar::result(){
-    
-    std::cout << "=============" << std::endl;
-    std::cout << "F: " << this->rplidarDIST[2] << std::endl;
-    std::cout << "B: " << this->rplidarDIST[0] << std::endl;
-    std::cout << "L: " << this->rplidarDIST[1] << std::endl;
-    std::cout << "R: " << this->rplidarDIST[3] << std::endl;
-    std::cout << "DIRECTION: " << this->platformMOVE << std::endl;
-    
-}
-/*__________ END: PUBLIC MEMBERS __________*/
-
-
-
-/*__________ START: PRIVATE MEMBERS __________*/
 // RPLIDAR A1 센서 스캔 결과를 가져온다.
 void rplidar::retrieve(){
 
@@ -153,6 +127,28 @@ void rplidar::retrieve(){
     }
 }
 
+// 우선순위 결정 후 최종적으로 보내줄 이동신호를 반환한다.
+char* rplidar::returnMove(char* MOVE){
+    this->behavior(MOVE);
+    return platformMOVE;
+}
+
+// 계산된 거리와 최종 이동방향을 보여준다.
+void rplidar::result(){
+    
+    std::cout << "=============" << std::endl;
+    std::cout << "F: " << this->rplidarDIST[2] << std::endl;
+    std::cout << "B: " << this->rplidarDIST[0] << std::endl;
+    std::cout << "L: " << this->rplidarDIST[1] << std::endl;
+    std::cout << "R: " << this->rplidarDIST[3] << std::endl;
+    std::cout << "DIRECTION: " << this->platformMOVE << std::endl;
+    
+}
+/*__________ END: PUBLIC MEMBERS __________*/
+
+
+
+/*__________ START: PRIVATE MEMBERS __________*/
 // RPLIDAR A1 센서 스캔 결과를 통해 사방 거리를 하나로 축약한다.
 void rplidar::compressDistance(){
 
@@ -187,6 +183,9 @@ void rplidar::compressDistance(){
         // 루프를 돌기 전에 현재 위상가ㅄ을 이전 위상가ㅄ으로 할당한다.
         angleOFF_prev = angleOFF;
 
+        // 플랫폼 구조물로 인해서 인식되는 원치않은 각도를 무시한다.
+        if ((12.5 < angle && angle < 16.5) || (343.5 < angle && angle <347.5)) continue;
+        
         // 최소거리를 저장한다.
         if (rplidarDIST[count] == 0) rplidarDIST[count] = distance;
         else if (rplidarDIST[count] > distance && distance != 0) rplidarDIST[count] = distance;
