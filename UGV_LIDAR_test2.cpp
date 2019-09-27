@@ -28,7 +28,7 @@
 #include <unistd.h>   /* UNIX standard function definitions */
 #include <fcntl.h>    /* File control definitions */
 #include <termios.h>  /* POSIX terminal control definitions */
-#include "Recognizer.hpp"
+#include <thread>
 
 /*__________ RPLIDAR __________*/
 #include <rplidar.h>
@@ -108,8 +108,8 @@ const std::string  classesFile = "names";
 const std::string  userImg = "pic/user.jpg";
 // CAFFE의 PROTOTXT와 CAFFEMODEL는 DARKNET의 CONFIG와 WEIGHT 파일과 동일하다 종류의 파일이다;
 
-
-
+char* data = STOP;
+bool isEnd = false;
 
 class Recognizer{
 
@@ -292,8 +292,215 @@ public:
 };
 
 
+void humanTracking(){
+    try {   // TRY BLOCK CODE START: WHOLE PROCESS FOR DETECTION AND AUTOMATION.
+    Recognizer recognizer(landmarkDat,encodeDat,odConfigFile,odWeightFile,fdConfigFile,fdWeightFile,classesFile);
+
+    // CREATE VECTOR OBJECT CALLED "detection1" WHICH CAN CONTAIN LIST OF MAT OBJECTS.
+    /*
+        >> `std::vector< std::vector< std::vector<Mat> > >`: Creates 3D vector array containing Mat data-type.
+    */
+    Mat frame;
+    cv::VideoCapture cap;
+
+    // OPEN DEFAULT CAMERA OF `/dev/video0` WHERE ITS INTEGER IS FROM THE BACK.
+    /*
+        Set the video resolution by `cap` as designated pixel size, does not work on called video file.
+        Access, or "open" default camera which is presumes to be `/dev/video0` file
+            ...(which is where number 0 may have derived from).
+    */
+
+    cap.open(1); // 노트북 카메라는 cap.open(1) 또는 cap.open(-1)
+    // USB 카메라는 cap.open(0);
+    int x1;
+    int y1;
+    int x2;
+    int y2;
+    bool found = true;// FIXME INEFFICIENT CODE
+    int countFrame = 0;
+    // Load face detection and pose estimation models.
+
+    // __________ PREPARATION OF FACIAL RECOGNITION BY SETTING NEURAL NETWORK FOR FACIAL DETECTION AND RECOGNITION. __________ //
 
 
+
+
+
+
+
+
+
+    // __________ PROCESS OF ACQUIRING USER FACIAL DATA FOR A FUTURE USER RECOGNITION. __________ //
+
+
+    cv::Mat user_img = cv::imread(userImg,cv::IMREAD_COLOR);
+    std::vector<dlib::rectangle> locations = recognizer.faceDetection(user_img);
+    // PREPARE A VARIABLE TO STORE ALL OF DETECTED FACES.
+    /*
+        >> `dlib::array<dlib::matrix<dlib::rgb_pixel>>`: dlib::matrix<dlib::rgb_pixel> has been discussed above.
+            ...Since dlib::array store rank-1 tensor, the parameterized type is to store multiple number of image data in a list.
+    */
+    dlib::array<matrix<rgb_pixel>> faces = recognizer.faceLandMark(user_img,locations);
+
+    // CREATE A VARIALBE "face_detected_user" FOR FUTURE FACIAL COMPARISON.
+    /*
+        >> It is still unclear what the stored value `face_detected_user[0]` represents,
+            ...but it is possible the value is (1) Loss, (2) Score, or (3) Confidence.
+        >> `net_recognition(<input_data>,<batch_size>)`: uncertain of a purpose of a <batch_size> is; there's only one facial data here!
+    */
+    std::vector<matrix<float,0,1>> face_descriptors = recognizer.faceEncoding(faces);
+
+
+
+    // __________ PROCESS OF PERSON DETECTION USING EXISTING FRAMEWORK MODEL. __________ //
+
+
+
+
+
+    // 웹캠으로 촬영이 진행되는 동안...
+    while(cap.isOpened()){
+
+
+
+
+        // VIDEOCAPTURE 클래스의 "CAPTURE"는 촬영된 순간의 프레임을 cv::Mat 형태의 "FRAME" 오브젝트에 할당한다.
+        cap >> frame;
+        double t = cv::getTickCount();
+        resize(frame,frame, Size(640,480));
+
+        found = recognizer.humanDetection(frame);
+
+
+
+
+        if(countFrame%3==0) {   // START OF OUTER IF CONDITION
+            //face recoginition 구현 중
+            if (found) {    // START OF INNER IF CONDITION.
+
+
+
+                std::vector<dlib::rectangle> locations2 = recognizer.faceDetection(frame);
+
+
+                dlib::array<matrix<rgb_pixel>> faces2 = recognizer.faceLandMark(frame,locations2);
+
+                std::vector<matrix<float, 0, 1>> face_descriptors2 = recognizer.faceEncoding(faces2);
+                std::vector<String> names;
+                String name;
+
+                // START OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
+                for (size_t i = 0; i < face_descriptors2.size(); ++i) {
+                    name = "unknown";
+                    if (length(face_descriptors[0] - face_descriptors2[i])< 0.5) {
+                        name = "user";
+                        long xcenter = (locations2[i].right() + locations2[i].left()) / 2;
+                        long ycenter = (locations2[i].bottom() + locations2[i].top()) / 2;
+                        long size = (locations2[i].right() - locations2[i].left());
+
+                        cout << "size = " << size << endl;
+                        //if(xcenter <100)
+//                         {
+//                             data="l";
+//                             //cout<<"data = "<<data<<endl;
+
+//                         }
+//                         else if(xcenter > 520)
+//                         {
+//                             data="r";
+//                             //cout<<"data = "<<data<<endl;
+
+//                         }
+                        //write(fd, data, 1);
+
+                        //if (xcenter!=320&&ycenter!= 240)
+                        //{
+                        //    cout<<"중심을 벗어낫습니다"<<endl;
+                        //}
+
+                        if (tempsize == 0) {
+                            tempsize = size;
+                            std::cout << "값을 저장하였습니다" << endl;
+                        }
+                        else {
+                            if (tempsize < size - 5) {
+                                tempsize = size;
+                                data = "b";
+                            }
+                            else if (tempsize > size + 5) {
+                                cout << "저장값 : " << tempsize << endl;
+                                //cout<<"data = "<<data<<endl;
+                                tempsize = size;
+                                data = "g";
+                            }
+                            else {data = "s";}
+                        }
+                    }   // END OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
+
+
+                    //cout<<"data = "<<data<<endl;
+                    names.push_back(name);
+
+                }   // END OF INNER IF CONDITION.
+
+                int i = 0;
+
+
+                for (int i = 0; i < locations2.size(); i++) {
+                    cv::rectangle(frame, Point(locations2[i].left(), locations2[i].top()), Point(locations2[i].right(), locations2[i].bottom()), Scalar(0, 255, 0), 2);
+                    putText(frame, names[i], Point(locations2[i].left() + 6, locations2[i].top() - 6), FONT_HERSHEY_DUPLEX, 1.0, Scalar(255, 255, 255), 2);
+
+                }
+
+            }   // END OF OUTER IF CONDITION
+
+
+        }   // END OF WHILE LOOP
+        double tt_opencvDNN = 0;
+        double fpsOpencvDNN = 0;
+
+
+
+        tt_opencvDNN = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+        fpsOpencvDNN = 1/tt_opencvDNN;
+        putText(frame, format("OpenCV DNN ; FPS = %.2f",fpsOpencvDNN), Point(10, 50), FONT_HERSHEY_SIMPLEX, 1.4, Scalar(0, 0, 255), 4);
+
+        // 웹캠에서 촬영하는 영상을 보여준다; Enter 키를 누르면 종료.
+        cv::imshow("HumanTrackingUV",frame);
+        if (cv::waitKey(30)==13) break;
+        countFrame++;
+
+
+     }// END OF WHILE LOOP
+    }// END OF TRY BLOCK: WHOLE PROCESS FOR DETECTION AND AUTOMATION.
+
+        // 예외처리 1: 랜드마크 마크 모델을 찾을 수 없습니다.
+    catch(serialization_error& e)
+    {
+        cout << "You need dlib's default face landmarking model file to run this example." << endl;
+        cout << "You can get it from the following URL: " << endl;
+        cout << "   http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2" << endl;
+        cout << endl << e.what() << endl;
+    }
+
+        // 예외처리 2
+    catch(exception& e)
+    {
+        cout << e.what() << endl;
+    }
+    isEnd = true;
+}
+void lidar(int& fd) {
+    class rplidar rplidarA1;
+    char *move;
+    while (!isEnd) {
+        rplidarA1.scan();
+        rplidarA1.retrieve();
+        move = rplidarA1.returnMove(data);
+        rplidarA1.result();
+        write(fd, move, strlen(move));
+    }
+}
 int main(int argc, char **argv ) {
 
     
@@ -370,211 +577,19 @@ int main(int argc, char **argv ) {
         return -1;
     }
 
-    class rplidar rplidarA1;
-        
-    try {   // TRY BLOCK CODE START: WHOLE PROCESS FOR DETECTION AND AUTOMATION.
-
-        Recognizer recognizer(landmarkDat,encodeDat,odConfigFile,odWeightFile,fdConfigFile,fdWeightFile,classesFile);
-            
-        // CREATE VECTOR OBJECT CALLED "detection1" WHICH CAN CONTAIN LIST OF MAT OBJECTS.
-        /*
-            >> `std::vector< std::vector< std::vector<Mat> > >`: Creates 3D vector array containing Mat data-type.
-        */
-        Mat frame;
-        cv::VideoCapture cap;
-
-        // OPEN DEFAULT CAMERA OF `/dev/video0` WHERE ITS INTEGER IS FROM THE BACK.
-        /*
-            Set the video resolution by `cap` as designated pixel size, does not work on called video file.
-            Access, or "open" default camera which is presumes to be `/dev/video0` file
-                ...(which is where number 0 may have derived from).
-        */
-
-        cap.open(1); // 노트북 카메라는 cap.open(1) 또는 cap.open(-1)
-        // USB 카메라는 cap.open(0);
-        int x1;
-        int y1;
-        int x2;
-        int y2;
-        bool found = true;// FIXME INEFFICIENT CODE
-        int countFrame = 0;
-        // Load face detection and pose estimation models.
-
-        // __________ PREPARATION OF FACIAL RECOGNITION BY SETTING NEURAL NETWORK FOR FACIAL DETECTION AND RECOGNITION. __________ //
-
-
-
-
 
         
 
-
-
-        // __________ PROCESS OF ACQUIRING USER FACIAL DATA FOR A FUTURE USER RECOGNITION. __________ //
-
-
-        cv::Mat user_img = cv::imread(userImg,cv::IMREAD_COLOR);
-        std::vector<dlib::rectangle> locations = recognizer.faceDetection(user_img);
-        // PREPARE A VARIABLE TO STORE ALL OF DETECTED FACES.
-        /*
-            >> `dlib::array<dlib::matrix<dlib::rgb_pixel>>`: dlib::matrix<dlib::rgb_pixel> has been discussed above.
-                ...Since dlib::array store rank-1 tensor, the parameterized type is to store multiple number of image data in a list.
-        */
-        dlib::array<matrix<rgb_pixel>> faces = recognizer.faceLandMark(user_img,locations);
-
-        // CREATE A VARIALBE "face_detected_user" FOR FUTURE FACIAL COMPARISON.
-        /*
-            >> It is still unclear what the stored value `face_detected_user[0]` represents,
-                ...but it is possible the value is (1) Loss, (2) Score, or (3) Confidence.
-            >> `net_recognition(<input_data>,<batch_size>)`: uncertain of a purpose of a <batch_size> is; there's only one facial data here!
-        */
-        std::vector<matrix<float,0,1>> face_descriptors = recognizer.faceEncoding(faces);
-
-
-
-        // __________ PROCESS OF PERSON DETECTION USING EXISTING FRAMEWORK MODEL. __________ //
+        thread hThread(humanTracking());
+        thread lThread(lidar(fd));
+        hThread.join();
+        lThread.join();
 
 
 
 
 
-        // 웹캠으로 촬영이 진행되는 동안...
-        while(cap.isOpened()){
-            
-            
-            rplidarA1.scan();
-            char* data = STOP;
-                
-            // VIDEOCAPTURE 클래스의 "CAPTURE"는 촬영된 순간의 프레임을 cv::Mat 형태의 "FRAME" 오브젝트에 할당한다.
-            cap >> frame;
-            double t = cv::getTickCount();
-            resize(frame,frame, Size(640,480));
 
-            found = recognizer.humanDetection(frame);
-
-
-
-
-            if(countFrame%3==0) {   // START OF OUTER IF CONDITION
-                //face recoginition 구현 중
-                if (found) {    // START OF INNER IF CONDITION.
-
-                    
-
-                    std::vector<dlib::rectangle> locations2 = recognizer.faceDetection(frame);
-
-
-                    dlib::array<matrix<rgb_pixel>> faces2 = recognizer.faceLandMark(frame,locations2);
-
-                    std::vector<matrix<float, 0, 1>> face_descriptors2 = recognizer.faceEncoding(faces2);
-                    std::vector<String> names;
-                    String name;
-
-                    // START OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
-                    for (size_t i = 0; i < face_descriptors2.size(); ++i) {
-                        name = "unknown";
-                        if (length(face_descriptors[0] - face_descriptors2[i])< 0.5) {
-                            name = "user";
-                            long xcenter = (locations2[i].right() + locations2[i].left()) / 2;
-                            long ycenter = (locations2[i].bottom() + locations2[i].top()) / 2;
-                            long size = (locations2[i].right() - locations2[i].left());
-
-                            cout << "size = " << size << endl;
-                            //if(xcenter <100)
-//                         {
-//                             data="l";
-//                             //cout<<"data = "<<data<<endl;
-
-//                         }
-//                         else if(xcenter > 520)
-//                         {
-//                             data="r";
-//                             //cout<<"data = "<<data<<endl;
-
-//                         }
-                            //write(fd, data, 1);
-
-                            //if (xcenter!=320&&ycenter!= 240)
-                            //{
-                            //    cout<<"중심을 벗어낫습니다"<<endl;
-                            //}
-
-                            if (tempsize == 0) {
-                                tempsize = size;
-                                std::cout << "값을 저장하였습니다" << endl;
-                            } 
-                            else {
-                                if (tempsize < size - 5) {
-                                    tempsize = size;
-                                    data = "b";
-                                }
-                                else if (tempsize > size + 5) {
-                                    cout << "저장값 : " << tempsize << endl;
-                                    //cout<<"data = "<<data<<endl;
-                                    tempsize = size;
-                                    data = "g";
-                                } 
-                                else {data = "s";}
-                        }
-                    }   // END OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
-                    
-
-                    //cout<<"data = "<<data<<endl;
-                    names.push_back(name);
-                        
-                }   // END OF INNER IF CONDITION.
-
-                int i = 0;
-
-
-                for (int i = 0; i < locations2.size(); i++) {
-                    cv::rectangle(frame, Point(locations2[i].left(), locations2[i].top()), Point(locations2[i].right(), locations2[i].bottom()), Scalar(0, 255, 0), 2);
-                    putText(frame, names[i], Point(locations2[i].left() + 6, locations2[i].top() - 6), FONT_HERSHEY_DUPLEX, 1.0, Scalar(255, 255, 255), 2);
-
-                }
-
-            }   // END OF OUTER IF CONDITION
-
-        rplidarA1.retrieve();
-        data = rplidarA1.returnMove(data);
-        rplidarA1.result();
-        
-        write(fd, data, strlen(data));
-        }   // END OF WHILE LOOP
-            double tt_opencvDNN = 0;
-            double fpsOpencvDNN = 0;
-
-
-
-            tt_opencvDNN = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-            fpsOpencvDNN = 1/tt_opencvDNN;
-            putText(frame, format("OpenCV DNN ; FPS = %.2f",fpsOpencvDNN), Point(10, 50), FONT_HERSHEY_SIMPLEX, 1.4, Scalar(0, 0, 255), 4);
-
-            // 웹캠에서 촬영하는 영상을 보여준다; Enter 키를 누르면 종료.
-            cv::imshow("HumanTrackingUV",frame);
-            if (cv::waitKey(30)==13) break;
-            countFrame++;
-
-
-        }// END OF WHILE LOOP
-
-
-    }// END OF TRY BLOCK: WHOLE PROCESS FOR DETECTION AND AUTOMATION.
-
-    // 예외처리 1: 랜드마크 마크 모델을 찾을 수 없습니다.
-    catch(serialization_error& e)
-    {
-        cout << "You need dlib's default face landmarking model file to run this example." << endl;
-        cout << "You can get it from the following URL: " << endl;
-        cout << "   http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2" << endl;
-        cout << endl << e.what() << endl;
-    }
-    
-    // 예외처리 2
-    catch(exception& e)
-    {
-        cout << e.what() << endl;
-    }
         
     // 영상인식과 자율주행이 모두 끝나면 R/W 파일을 닫는다.
     close(fd);
