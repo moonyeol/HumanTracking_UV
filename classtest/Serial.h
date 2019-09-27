@@ -7,12 +7,12 @@ class Serial_init
     public: 
         Serial_init();   
         int fd;
-         void init();
-
+        void init();
+    void option();
     private: 
         
              
-        void option();
+       
        
 };
 #endif
