@@ -24,7 +24,9 @@ rplidar::rplidar(): RESULT(NULL), rplidarDRIVER(NULL), platformMOVE(NULL)
 
     // RPLIDAR A1과 통신을 위한 장치 드라이버 생성.
     // RPLIDAR 제어는 드라이버를 통해서 진행된다: 예. rplidarA1 -> functionName().
+    std::cout << "[INFO] RPLIDAR DRIVER:";
     rplidarDRIVER = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
+    std::cout << " ...READY!";
 
     // 시리얼 포트 경로 "/dev/ttyUSB0"를 통해
     /*
@@ -32,19 +34,24 @@ rplidar::rplidar(): RESULT(NULL), rplidarDRIVER(NULL), platformMOVE(NULL)
             그리고 통신채널에서 송수률(baud rate)인 초당 최대 비트, 즉 bit/sec을 선택한다. 일반적으로 RPLIDAR 모델의baud rate는 115200으로 설정한다.
             ...만일 드라이버와 장치의 연결이 성공되었으면 숫자 0을 반환한다.
     */
+    std::cout << "[INFO] CONNECTION:";
     RESULT = rplidarDRIVER->connect("/dev/ttyUSB0", 115200);
 
-    // // 연결이 성공하였으면 아래의 코드를 실행한다
-    // if(IS_OK(RESULT)) {
-    //     // RPLIDAR 모터 동작.
-    //     rplidarDRIVER -> startMotor();
-    // }
+    // 연결이 성공하였으면 아래의 코드를 실행한다
+    if(IS_OK(RESULT)) {
+        // RPLIDAR 모터 동작.
+        std::cout << " ...SUCCESS!" << std::endl;
+        std::cout << "[INFO] MOTOR START:";
+        rplidarDRIVER -> startMotor();
+        std::cout << " ...SUCCESS!" << std::endl;
+    }
 
-    // // 연결이 실패하였으면 에러를 알리고, 객체를 자동적으로 파괴한다.
-    // else {
-    //     std::cout << "[ERROR] FAILED TO CONNECT TO LIDAR." << std::endl;
-    //     this->~rplidar();
-    // }
+    // 연결이 실패하였으면 에러를 알리고, 객체를 자동적으로 파괴한다.
+    else {
+        std::cout << "...FAILED!" << std::endl;
+        std::cout << "[ERROR] FAILED TO CONNECT TO LIDAR." << std::endl;
+        this->~rplidar();
+    }
 }
 
 // DESTRUCTOR
