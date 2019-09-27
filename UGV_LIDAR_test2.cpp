@@ -490,7 +490,7 @@ void humanTracking(){
     }
     isEnd = true;
 }
-void lidar(int& fd) {
+void lidar(int fd) {
     class rplidar rplidarA1;
     char *move;
     while (!isEnd) {
@@ -580,8 +580,8 @@ int main(int argc, char **argv ) {
 
         
 
-        thread hThread(humanTracking());
-        thread lThread(lidar(fd));
+        thread hThread(humanTracking);
+        thread lThread{lidar,fd};
         hThread.join();
         lThread.join();
 
