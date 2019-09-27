@@ -238,8 +238,9 @@ public:
 int main(int argc, char **argv ) {
     int fd;
     char* movedata;
+    Serial_init Serial_init;
      fd = Serial_init.init(); 
-     Serial_init Serial_init();
+     Serial_init.option();
    
     // RPLIDAR A1과 통신을 위한 장치 드라이버 생성. 제어는 드라이버를 통해서 진행된다: 예. rplidarA1 -> functionName().
     RPlidarDriver * rplidarA1 = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);

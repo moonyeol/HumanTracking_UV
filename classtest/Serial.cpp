@@ -8,9 +8,9 @@
 #include "Serial.h"
  using namespace std;
 
-Serial_init::Serial_init(){
-    this->option();
-}
+//Serial_init::Serial_init(){
+    //this->option();
+//}
 
 void Serial_init::init()
 {
