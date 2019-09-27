@@ -312,12 +312,12 @@ class Serial_init {
         {
             move = "r";
         }
-        else if (tempsize < size-5)
+        else if (tempsize < size-1)
         {
             tempsize = size;
             move = "b";
         }
-        else if (tempsize > size+5)
+        else if (tempsize > size+1)
         {
             tempsize = size;
             move = "g";
