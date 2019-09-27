@@ -484,7 +484,7 @@ void humanTracking(){
                     if (length(face_descriptors[0] - face_descriptors2[i])< 0.5) {
                         name = "user";
                         direction direction;
-                        move = direction.compare(locations2[i].left(), locations2[i].right());
+                        data = direction.compare(locations2[i].left(), locations2[i].right());
                         
                     }   // END OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
 
@@ -557,7 +557,6 @@ int main(int argc, char **argv ) {
     
 
     int fd;
-     char* move;
      Serial_init Serial_init;
      fd = Serial_init.init();
      Serial_init.option();     
@@ -581,4 +580,4 @@ int main(int argc, char **argv ) {
         
     // 영상인식과 자율주행이 모두 끝났으면 OpenCV 창을 닫는다.
     cv::destroyWindow("HumanTrackingUV");
-        
+}
