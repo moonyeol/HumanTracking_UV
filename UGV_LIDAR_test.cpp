@@ -43,8 +43,8 @@ using namespace rp::standalone::rplidar;
 
 /*__________ RPLIDAR 행동교정 함수선언 __________*/
 char* rplidarBehavior(/*char, */char*, int*);
-dlib::array<matrix<rgb_pixel>>& faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations, shape_predictor& pose_model);
-std::vector<dlib::rectangle>& faceDetection(Mat& frame, Net& net);
+dlib::array<matrix<rgb_pixel>> faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations, shape_predictor& pose_model);
+std::vector<dlib::rectangle> faceDetection(Mat& frame, Net& net);
 bool humanDetection(Mat& frame, Net& net, std::vector<string> classes);
 
 
@@ -269,9 +269,7 @@ int main(int argc, char **argv ) {
         /*
             >> `std::vector< std::vector< std::vector<Mat> > >`: Creates 3D vector array containing Mat data-type.
         */
-        Mat frame, blob, grayFrame;
-        std::vector<Mat> detection1;
-        std::vector<std::vector<std::vector<Mat>>> detection2;
+        Mat frame, blob;
         cv::VideoCapture cap;
 
         // OPEN DEFAULT CAMERA OF `/dev/video0` WHERE ITS INTEGER IS FROM THE BACK.
@@ -386,8 +384,8 @@ int main(int argc, char **argv ) {
 //        }
 //        dlib::array<matrix<rgb_pixel>>* landMark = faceLandMark(detector(user_img));
 
-        std::vector<dlib::rectangle>& locations = faceDetection(user_img,net2);
-        dlib::array<matrix<rgb_pixel>>& faces = faceLandMark(user_img,locations,pose_model);
+        std::vector<dlib::rectangle> locations = faceDetection(user_img,net2);
+        dlib::array<matrix<rgb_pixel>> faces = faceLandMark(user_img,locations,pose_model);
 
         // CREATE A VARIALBE "face_detected_user" FOR FUTURE FACIAL COMPARISON.
         /*
@@ -581,7 +579,7 @@ int main(int argc, char **argv ) {
 
 
 
-                    std::vector<dlib::rectangle>& locations2 = faceDetection(frame, net2);
+                    std::vector<dlib::rectangle> locations2 = faceDetection(frame, net2);
 
 //                int frameHeight = frame.rows;
 //                int frameWidth = frame.cols;
@@ -613,7 +611,7 @@ int main(int argc, char **argv ) {
 
 
 
-                    dlib::array<matrix<rgb_pixel>>& faces2 = faceLandMark(frame,locations2,pose_model);
+                    dlib::array<matrix<rgb_pixel>> faces2 = faceLandMark(frame,locations2,pose_model);
 //                auto locations = detector(img);
 //                for (auto face : locations) {
 //                    auto shape = pose_model(img, face);
@@ -702,8 +700,8 @@ int main(int argc, char **argv ) {
                                 FONT_HERSHEY_DUPLEX, 1.0, Scalar(255, 255, 255), 2);
                     }
 
-                    delete(&faces2);
-                    delete(&locations2);
+//                    delete(&faces2);
+//                    delete(&locations2);
                 }
 
 
@@ -724,8 +722,8 @@ int main(int argc, char **argv ) {
 
         }// END OF WHILE LOOP
 
-        delete(&locations);
-        delete(&faces);
+//        delete(&locations);
+//        delete(&faces);
     }// END OF TRY BLOCK: WHOLE PROCESS FOR DETECTION AND AUTOMATION.
 
     // 예외처리 1: 랜드마크 마크 모델을 찾을 수 없습니다.
@@ -807,12 +805,13 @@ char* rplidarBehavior(/*char detectPosition, */char* platformMove, int *distance
     return platformMove;
 }
 
-dlib::array<matrix<rgb_pixel>>& faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations, shape_predictor& pose_model) {
+dlib::array<matrix<rgb_pixel>> faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations, shape_predictor& pose_model) {
     matrix<rgb_pixel> img;
     cv::Mat rgb_frame;
 //    cvtColor(frame,rgb_frame,COLOR_BGR2RGB);
     dlib::assign_image(img, dlib::cv_image<rgb_pixel>(frame));
-    dlib::array<matrix<rgb_pixel>>& result = *new dlib::array<matrix<rgb_pixel>>;
+//    dlib::array<matrix<rgb_pixel>>& result = *new dlib::array<matrix<rgb_pixel>>;
+    dlib::array<matrix<rgb_pixel>> result;
     for (auto face : locations) {
         auto shape = pose_model(img, face);
         matrix<rgb_pixel> face_chip;
@@ -822,8 +821,9 @@ dlib::array<matrix<rgb_pixel>>& faceLandMark(Mat& frame,std::vector<dlib::rectan
     return result;
 }
 
-std::vector<dlib::rectangle>& faceDetection(Mat& frame, Net& net){
-    std::vector<dlib::rectangle>& locations = *new std::vector<dlib::rectangle>;
+std::vector<dlib::rectangle> faceDetection(Mat& frame, Net& net){
+//    std::vector<dlib::rectangle>& locations = *new std::vector<dlib::rectangle>;
+    std::vector<dlib::rectangle> locations;
     int frameHeight = frame.rows;
     int frameWidth = frame.cols;
 
