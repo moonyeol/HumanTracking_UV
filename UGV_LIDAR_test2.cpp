@@ -32,6 +32,7 @@
 /*__________ RPLIDAR __________*/
 #include <rplidar.h>
 #include <cmath>
+#include "rplidar.hpp"
 
 
 using namespace cv;
@@ -40,9 +41,6 @@ using namespace dlib;
 using namespace std;
 using namespace rp::standalone::rplidar;
 
-
-/*__________ RPLIDAR 행동교정 함수선언 __________*/
-char* rplidarBehavior(/*char, */char*, int*);
 
 
 #define CYCLE 360       // 한 사이클은 360도.
@@ -251,6 +249,8 @@ public:
 
 
 int main(int argc, char **argv ) {
+        
+
 
     
 
@@ -326,51 +326,12 @@ int main(int argc, char **argv ) {
         return -1;
     }
 
-    // RPLIDAR A1과 통신을 위한 장치 드라이버 생성. 제어는 드라이버를 통해서 진행된다: 예. rplidarA1 -> functionName().
-    RPlidarDriver * rplidarA1 = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
+    /*__________  rplidar 클래스로 rplidarA1 객체 생성. GKO95 __________*/
+    class rplidar rplidarA1;
         
     try {   // TRY BLOCK CODE START: WHOLE PROCESS FOR DETECTION AND AUTOMATION.
 
         Recognizer recognizer(landmarkDat,encodeDat,odConfigFile,odWeightFile,fdConfigFile,fdWeightFile,classesFile);
-
-
-
-        /*__________ [START]: RPLIDAR A1 센서 제어 관련 설정: GKO95 작성 __________*/
-
-        // 배열 <distances>는 각 방향마다 가지는 최소 스캔 결과값을 포함한다.
-        int distances[DIRECTION]={0};
-            
-        // 시리얼 포트 경로 "/dev/ttyUSB0"를 통해
-        /*
-            >> `rp::standalone::rplidar::connet()`: RPLidar 드라이버를 연결할 RPLIDAR A1 장치와 어떤 시리얼 포트를 사용할 것인지,
-                그리고 통신채널에서 송수률(baud rate)인 초당 최대 비트, 즉 bit/sec을 선택한다. 일반적으로 RPLIDAR 모델의baud rate는 115200으로 설정한다.
-                ...만일 드라이버와 장치의 연결이 성공되었으면 숫자 0을 반환한다.
-        */
-        u_result result = rplidarA1->connect("/dev/ttyUSB0", 115200);
-        
-        // 연결이 성공하였으면 아래의 코드를 실행한다
-        if (IS_OK(result)) {
-            
-            // RPLIDAR 모터 동작.
-            rplidarA1 -> startMotor();
-            
-            // RPLIDAR에는 여러 종류의 스캔 모드가 있는데, 이 중에서 일반 스캔 모드를 실행한다.
-            /*
-            >> `rp::standalone::rplidar::startScanExpress(<force>,<use_TypicalScan>,<options>,<outUsedScanMode>)`:
-                ...<force>           - 모터 작동 여부를 떠나 가ㅇ제(force)로 스캔 결과를 반환하도록 한다.
-                ...<use_TypicalScan> - true는 일반 스캔모드(초당 8k 샘플링), false는 호환용 스캔모드(초당 2k 샘플링).
-                ...<options>         - 0을 사용하도록 권장하며, 그 이외의 설명은 없다.
-                ...<outUsedScanMode> - RPLIDAR가 사용할 스캔모드 가ㅄ이 반환되는 변수.
-            */
-            RplidarScanMode scanMode;
-            rplidarA1 -> startScan(false, true, 0, &scanMode);
-        }
-    
-        // 연결이 실패하였으면 아래의 코드를 실행한다.
-        else {fprintf(stderr, "Failed to connect to LIDAR %08x\r\n", result);}
-        /*__________ [END]: RPLIDAR A1 센서 제어 관련 설정 __________*/
-            
-            
             
         // CREATE VECTOR OBJECT CALLED "detection1" WHICH CAN CONTAIN LIST OF MAT OBJECTS.
         /*
@@ -515,86 +476,6 @@ int main(int argc, char **argv ) {
 
         // 웹캠으로 촬영이 진행되는 동안...
         while(cap.isOpened()){
-            
-            /*__________ [START]: RPLIDAR A1 센서 제어: GKO95 작성 __________*/
-                
-            // 스캔 데이터인 노드(node)를 담을 수 있는 배열을 생성한다.
-            rplidar_response_measurement_node_hq_t nodes[8192];
-
-            // 노드 개수(8192)를 계산적으로 구한다.
-            size_t nodeCount = sizeof(nodes)/sizeof(rplidar_response_measurement_node_hq_t);
-            
-            // 완전한 0-360도, 즉 한 사이클의 스캔이 완료되었으면 스캔 정보를 획득한다.
-            /*
-                >> `grabScanDataHq(<nodebuffer>,<count>)`: 본 API로 획득한 정보들은 항상 다음과 같은 특징을 가진다:
-
-                    1) 획득한 데이터 행렬의 첫 번째 노드, 즉 <nodebuffer>[0]는 첫 번째 스캔 샘플값이다 (start_bit == 1).
-                    2) 데이터 전체는 정확히 한 번의 360도 사이클에 대한 스캔 정보만을 지니고 있으며, 그 이상 혹은 그 이하도 아니다.
-                    3) 각도 정보는 항상 오름차순으로 나열되어 있지 않다. 이는 ascendScanData API를 사용하여 오름차순으로 재배열 가능하다.
-
-                    ...<nodebuffer> - API가 스캔 정보를 저장할 수 있는 버퍼.
-                    ...<count>      - API가 버퍼에게 전달할 수 있는 최대 데이터 개수를 초기설정해야 한다.
-                                    API의 동작이 끝났으면 해당 파라미터로 입력된 변수는 실제로 스캔된 정보 개수가 할당된다 (예. 8192 -> 545)
-            */
-            result = rplidarA1->grabScanDataHq(nodes, nodeCount);
-            
-            // 스캔을 성공하였을 경우 아래의 코드를 실행한다.
-            if (IS_OK(result)) {    // START OF IF CONDITION: IF SCAN IS COMPLETE
-
-                // <angleRange>: 총 방향 개수, <distances[]>: 거리를 담는 배열, <count>: 방향 카운터, <angleOF_prev>: 이전 위상가ㅄ을 받아내기 위한 변수.
-                int angleRange = CYCLE/DIRECTION;
-                int count = 0, angleOFF_prev = NULL;
-                // 거리값을 계산하고 정리하기 위해 사용되는 임시 저장변수.
-                int distancesTEMP[DIRECTION] = {0};
-
-                // 순서를 오름차순으로 재배열한다.
-                rplidarA1 -> ascendScanData(nodes, nodeCount);
-
-                // 스캔 결과를 오름차순으로 하나씩 확인한다.
-                for (int i = 0; i < nodeCount; i++){    // START OF FOR LOOP: READING SCAN DATA
-
-                    // 각도는 도 단위 (+ 위상), 거리는 밀리미터 단위로 선정 (범위외 거리는 0으로 반환).
-                    float angle = nodes[i].angle_z_q14 * 90.f / (1 << 14);
-                    float distance = nodes[i].dist_mm_q2 / (1 << 2);
-                    
-                    // 위상 추가하여 방향성 교정.
-                    angle = angle + angleRange/2;
-
-                    // 하나의 방향이라고 인지할 수 있도록 정해놓은 batch 범위가 있으며, 중앙에서 얼마나 벗어난 각도인지 확인.
-                    // 값이 크면 클수록 중앙과 가깝다는 의미.
-                    int angleOFF = lround(angle) % angleRange;
-                    angleOFF = abs(angleOFF - angleRange/2);
-                    
-                    // 현재 위상가ㅄ이 0이고 이전 위상가ㅄ이 1이면 방향 카운터를 증가시킨다.
-                    // 반대로 설정하면 초반에 바로 (현재 = 1, 이전 = 0) 가ㅄ이 나올 수 있어 오류는 발생하지 않지만 첫 방향의 최소거리가 계산되지 않는다.
-                    if (angleOFF == 0 && angleOFF_prev == 1) count++;
-                    
-                    // 처리되지 않은 나머지 전방 각도 당 거리를 계산하기 위하여 방향 카운터 초기화.
-                    if (count == DIRECTION) count = 0;
-
-                    // 루프를 돌기 전에 현재 위상가ㅄ을 이전 위상가ㅄ으로 할당한다.
-                    angleOFF_prev = angleOFF;
-
-                    // 0을 제외한 최소거리를 저장한다.
-                    if (distancesTEMP[count] == 0) distancesTEMP[count] = distance;
-                    else if (distancesTEMP[count] > distance && distance != 0) distancesTEMP[count] = distance;
-
-                }   // END OF FOR LOOP: READING SCAN DATA.
-
-                for (int i = 0; i < DIRECTION; i++) distances[i] = distancesTEMP[i];
-                
-            }   // END OF IF CONDITION: IF SCAN IS COMPLETE
-            
-            // FOR A SINGLE CYCLE
-            // break;
-            
-            // 스캔을 실패하였을 경우 아래의 코드를 실행한다.
-            if (IS_FAIL(result))
-            {   
-                std::cout << "[ERROR] FAILED TO SCAN USING LIDAR." << std::endl;
-                break;
-            }
-            /*__________ [END]: RPLIDAR A1 센서 제어 __________*/
                 
             // VIDEOCAPTURE 클래스의 "CAPTURE"는 촬영된 순간의 프레임을 cv::Mat 형태의 "FRAME" 오브젝트에 할당한다.
             cap >> frame;
@@ -609,9 +490,13 @@ int main(int argc, char **argv ) {
             if(countFrame%3==0) {
                 //face recoginition 구현 중
                 if (found) {
-
+                    
                     char* data;
+                    
+                    /*__________ RPLIDAR A1이 주변 장애물을 스캔하고 값을 가져와 사방의 최소거리를 저장한다. __________*/
+                    rplidarA1.scan();
 
+                    
                     std::vector<dlib::rectangle> locations2 = recognizer.faceDetection(frame);
 
 
@@ -680,8 +565,10 @@ int main(int argc, char **argv ) {
                             }
                         }   // END OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
 
-                        /*__________ RPLIDAR 행동교정 함수 __________*/
-                        data = rplidarBehavior(data, distances);
+                        /*__________ RPLIDAR 행동교정 및 결과값 출력. GKO95 __________*/
+                        data = rplidarA1.returnMove(data);
+                        rplidarA1.result();
+                        
                         write(fd, data, strlen(data));
 
                         //cout<<"data = "<<data<<endl;
@@ -754,54 +641,3 @@ int main(int argc, char **argv ) {
         
     return 0;
 }
-
-
-/*__________ RPLIDAR 행동교정 함수 정의: GKO95 작성 __________*/
-char* rplidarBehavior(/*char detectPosition, */char* platformMove, int *distanceRPLIDAR) {
-
-    // REFERENCE
-    /*
-        >> detectPostion: 영상에 탐지된 대상자가 왼쪽(l) 혹은 오른쪽(r)에 있는지 알려주는 파라미터.
-        >> platformMove: 영상에 탐지된 대상자를 기반으로 전진(g), 후진(b), 좌회전(l), 우회전(r), 혹은 정지(s)하는지 알려주는 파라미터.
-        >> distanceRPLIDAR = 전방으로 시작으로 시계방향으로 거리를 알려주는 파라미터; {전방, 우, 우X2, ..., 우X(n-1), 후방, 좌X(n-1),  ... , 좌X2, 좌}. 0은 측정범위 밖.
-    */
-
-    // 장애물 기준 거리를 300mm, 즉 0.3미터로 잡는다.
-    #define DIST_STOP 300
-
-    // 방향을 틀었을 때, 최소한 0.5미터의 여유가 있을 때로 선택한다.
-    #define DIST_REF 500
-
-    // 정지 신호에는 무조건 정지한다.
-    if (platformMove == STOP) return STOP;
-
-    // 전방에 장애물이 존재할 경우 (0은 측정범위 밖); 후진과 정지는 따로 조건문이 주어져 있으므로 고려하지 않는다.
-    if (0 < *(distanceRPLIDAR + DIRECTION/2) && *(distanceRPLIDAR + DIRECTION/2) <= DIST_STOP && platformMove != STOP && platformMove != BACK){
-
-        // 전 방향의 거리여부를 앞에서부터 뒤로 좌우를 동시에 확인한다 (후방 제외).
-        for (int i = (DIRECTION/2) -1; i > 0; i--){
-
-            // 오른쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 왼쪽보다 거리적 여유가 많을 시 오른쪽으로 회전한다.
-            if ((*(distanceRPLIDAR + i) > DIST_REF && *(distanceRPLIDAR + i) >= *(distanceRPLIDAR + (DIRECTION - i)) && *(distanceRPLIDAR + (DIRECTION - i)) != 0) || *(distanceRPLIDAR + i) == 0)
-                return LEFT;
-            // 반면 왼쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 오른쪽보다 거리적 여유가 많을 시에는 왼쪽으로 회전한다.
-            else if((*(distanceRPLIDAR + (DIRECTION - i)) > DIST_REF  && *(distanceRPLIDAR + i) <= *(distanceRPLIDAR + (DIRECTION - i)) &&  *(distanceRPLIDAR + i) != 0 ) || *(distanceRPLIDAR + (DIRECTION - i)) == 0 )
-                return RIGHT;
-        }
-
-        // 위의 조건문을 만족하지 않았다는 것은 정해진 기준의 여유보다 거리가 적다는 의미이다.
-
-        // 후방 거리여부를 확인하고, 전방향이 막혀 있으면 움직이지 않는다.
-        if (*(distanceRPLIDAR) > DIST_REF) return BACK;
-        else return STOP;
-    }
-
-    // 뒤에 장애물이 있으면 뒤로 움직이는 신호에도 정지시킨다.
-    if (platformMove == BACK && *(distanceRPLIDAR) <= DIST_REF) return STOP;
-    
-    // 아무런 조건을 만족하지 않으면 장애물의 구애를 받지 않는다는 의미로 신호대로 움직인다.
-    return platformMove;
-}
-
-
-
