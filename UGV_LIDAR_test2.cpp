@@ -108,6 +108,7 @@ const std::string  fdConfigFile = "models/deploy.prototxt";
 const std::string  fdWeightFile = "models/res10_300x300_ssd_iter_140000_fp16.caffemodel";
 const std::string  classesFile = "names";
 const std::string  userImg = "pic/user.jpg";
+// CAFFE의 PROTOTXT와 CAFFEMODEL는 DARKNET의 CONFIG와 WEIGHT 파일과 동일하다 종류의 파일이다;
 
 
 
@@ -124,9 +125,22 @@ private:
 public:
 
     Recognizer(String landmarkDat, String frNetModel, string odConfigFile, string odWeightFile, String fdConfigFile, String fdWeightFile, String classesFile){
+        // ASSIGN VARIABLE "net" AS AN OBJECT OF "anet_type" DEFINED ABOVE.
+        /*
+            >> `models/dlib_face_recognition_resnet_model_v1.dat`: DNN for a "FACIAL RECOGNITION".
+                ...it is presume this file too needs deserialization which reconstructs to original data format.
+                ...for more information of a serialization, read this webpage; https://www.geeksforgeeks.org/serialization-in-java/.
+            >> statement `dlib::deserialize("models/dlib_face_recognition_resnet_model_v1.dat") >> net;`
+                ...reconstructed recognition model is placed in a hollow neural network frame manually created using operator `>>`.
+                ...where now this variable `net` works as a model.
+        */
         deserialize(frNetModel) >> faceEncoder;
         deserialize(landmarkDat) >> pose_model;
+        // CAFFE의 설정파일과 모델파일을 OpenCV에서 미리 준비된 신경망으로 불러 넣어준다:
+        // 이는 안면 탐지가 아닌 "사람 탐지"을 위해 사용된다.
         odNet = readNetFromCaffe(odConfigFile, odWeightFile);
+        // CAFFE의 설정파일과 모델파일을 OpenCV에서 미리 준비된 신경망으로 불러 넣어준다:
+        // 이 신경망은 "안면 탐지"를 위해 사용된다. dlib의 face detector보다 좋은 성능을 보인다.
         fdnet = readNetFromCaffe(fdConfigFile, fdWeightFile);
         odNet.setPreferableTarget(DNN_TARGET_OPENCL);
         fdnet.setPreferableTarget(DNN_TARGET_OPENCL);
@@ -135,6 +149,14 @@ public:
     }
 
     void readClasses(){
+        // 클래스 목록을 수집한다.
+        /*
+            >> `cv::String::c_str()`: "std::string::c_str()"로서도 함수가 존재;
+                ...NULL(즉, 띄어쓰기 혹은 줄바꿈)이 있을 때마다 문자열을 나누어 행렬로 반환.
+            >> `cv::vector::push_back(<data>)`: <data>를 현재 벡터의 맨 마지막으로 넣어준다.
+                ...마치 스택 자료구조의 PUSH-BACK이라고 생각하면 된다.
+                    결과적으로, 모든 클래스 종류는 "classes"라는 벡터 변수에 저장된다.
+        */
         ifstream ifs(classesFile.c_str());
         string line;
         while(getline(ifs,line))
@@ -224,6 +246,29 @@ public:
     }
 
     dlib::array<matrix<rgb_pixel>> faceLandMark(Mat& frame,std::vector<dlib::rectangle>& locations) {
+        // FACIAL LANDMARK DETECTION
+        /*
+            >> `dlib::shape_predictor`: an empty DNN frame that can take external model such as "shape_predictor_68_face_landmarks.dat".
+                ...returns set of point locations that define the pose of the object, in this case, face landmark locations.
+                ...therefore, shape_predictor is a neural network for "FACIAL DETECTION".
+                    ...There exist `dlib::shape_predictor_trainer` which can train custom model from an empty DNN frame.
+            >> `dlib::deserialize()`  : recover data saved in serialized back to its original format with deserialization.
+                ...the operator `>>` imports the file of model to the "dlib::shape_predictor" object.
+            >> `shape_predictor_68_face_landmarks.dat`: a file containing a model of pin-pointing 68 facial landmark.
+                ...data is saved in serialized format which can be stored, transmitted and reconstructed (deserialization) later.
+                ...얼굴 랜드마크 데이터 파일 "shape_predictor_68_face_landmarks.dat"의 라이선스는 함부로 상업적 이용을 금합니다.
+                ...본 파일을 상업적 용도로 사용하기 위해서는 반드시 Imperial College London에 연락하기 바랍니다.
+        */
+        // STORES FACIAL IMAGE CHIP(AKA. FACIAL PORTION OF CROPPED IMAGE) FOR FACIAL RECOGNITION.
+        /*
+            >> `auto shape = net_landmark(<image>, <face_rect>)`: determines the facial region with <face_rect> in the  original image <image>,
+                ...and from there extract 68-landmarks.
+                ...object "shape" has rect data and 68-landmarks data (which includes x,y pixel locations).
+            >> `dlib::get_face_chip_details(<landmark_data>,<crop_size(square)>,<crop_padding>)`: considering <crop_size> and <crop_padding>,
+                ...provides chip_detail object to `dlib::extract_image_chip()` for chipping reference based on landmark 5-point or 68-point.
+            >> `dlib::extract_image_chip(<input_image>,<chip_details>,<output_chip>)`: while <chip_details> works as a image-crop reference,
+                ...extract image_chip from <input_image> to <output_chip>.
+        */
         matrix<rgb_pixel> img;
         cv::Mat rgb_frame;
         dlib::assign_image(img, dlib::cv_image<rgb_pixel>(frame));
@@ -238,6 +283,7 @@ public:
     }
 
     std::vector<matrix<float,0,1>> faceEncoding(dlib::array<matrix<rgb_pixel>>& faces){
+
         return faceEncoder(faces,16);
     }
 
@@ -376,7 +422,7 @@ int main(int argc, char **argv ) {
         /*
             >> `std::vector< std::vector< std::vector<Mat> > >`: Creates 3D vector array containing Mat data-type.
         */
-        Mat frame, blob;
+        Mat frame;
         cv::VideoCapture cap;
 
         // OPEN DEFAULT CAMERA OF `/dev/video0` WHERE ITS INTEGER IS FROM THE BACK.
@@ -398,82 +444,24 @@ int main(int argc, char **argv ) {
 
         // __________ PREPARATION OF FACIAL RECOGNITION BY SETTING NEURAL NETWORK FOR FACIAL DETECTION AND RECOGNITION. __________ //
 
-        // DECLARE A FRONTAL FACE DETECTOR (HOG BASED) TO A VARIABLE "detector".
-        /*
-            >> `dlib::get_frontal_face_detector()`: return "dlib::object_detector" object upon detecting a frontal face.
-                ...while the returned variable type here is `dlib::frontal_face_detector` is actually an alias of `dlib::object_detector`.
-                ...Python didn't needed this data-type since variable in Python does not need to data-type designation.
-            >> `dlib::object_detector`: a tool for detecting the positions of objects in an image.
-                ...returns `dlib::rectangle` describing left, top, right, and bottom boundary pixel position of the rectangle.
-        */
 
-//        frontal_face_detector detector = get_frontal_face_detector();
-        // FACIAL LANDMARK DETECTION
-        /*
-            >> `dlib::shape_predictor`: an empty DNN frame that can take external model such as "shape_predictor_68_face_landmarks.dat".
-                ...returns set of point locations that define the pose of the object, in this case, face landmark locations.
-                ...therefore, shape_predictor is a neural network for "FACIAL DETECTION".
-                    ...There exist `dlib::shape_predictor_trainer` which can train custom model from an empty DNN frame.
-            >> `dlib::deserialize()`  : recover data saved in serialized back to its original format with deserialization.
-                ...the operator `>>` imports the file of model to the "dlib::shape_predictor" object.
-            >> `shape_predictor_68_face_landmarks.dat`: a file containing a model of pin-pointing 68 facial landmark.
-                ...data is saved in serialized format which can be stored, transmitted and reconstructed (deserialization) later.
-                ...얼굴 랜드마크 데이터 파일 "shape_predictor_68_face_landmarks.dat"의 라이선스는 함부로 상업적 이용을 금합니다.
-                ...본 파일을 상업적 용도로 사용하기 위해서는 반드시 Imperial College London에 연락하기 바랍니다.
-        */
-//        shape_predictor pose_model;
-//        deserialize("models/shape_predictor_68_face_landmarks.dat") >> pose_model;
+
+
+
         
-        // ASSIGN VARIABLE "net" AS AN OBJECT OF "anet_type" DEFINED ABOVE.
-        /*
-            >> `models/dlib_face_recognition_resnet_model_v1.dat`: DNN for a "FACIAL RECOGNITION".
-                ...it is presume this file too needs deserialization which reconstructs to original data format.
-                ...for more information of a serialization, read this webpage; https://www.geeksforgeeks.org/serialization-in-java/.
-            >> statement `dlib::deserialize("models/dlib_face_recognition_resnet_model_v1.dat") >> net;`
-                ...reconstructed recognition model is placed in a hollow neural network frame manually created using operator `>>`.
-                ...where now this variable `net` works as a model.
-        */
-
-//        anet_type net;
-//        deserialize("models/dlib_face_recognition_resnet_model_v1.dat") >> net;
 
 
-
-//        Net net2 = cv::dnn::readNetFromCaffe(caffeConfigFile, caffeWeightFile);
-//
-//        net2.setPreferableTarget(DNN_TARGET_OPENCL);
 
         // __________ PROCESS OF ACQUIRING USER FACIAL DATA FOR A FUTURE USER RECOGNITION. __________ //
 
-        // ACQUIRE A FACIAL IMAGE FOR RECOGNITION.
-        /*
-            >> `dlib::matrix<dlib::rgb_pixel>`: dlib::matrix is a rank-2 tensor (width and height)
-                ... and dlib::rgb_pixel is a rank-1 tensor (RGB channel per pixel). Therefore, the parameterized type is to stores image data.
-        */
 
+        cv::Mat user_img = cv::imread(userImg,cv::IMREAD_COLOR);
+        std::vector<dlib::rectangle> locations = recognizer.faceDetection(user_img);
         // PREPARE A VARIABLE TO STORE ALL OF DETECTED FACES.
         /*
             >> `dlib::array<dlib::matrix<dlib::rgb_pixel>>`: dlib::matrix<dlib::rgb_pixel> has been discussed above.
                 ...Since dlib::array store rank-1 tensor, the parameterized type is to store multiple number of image data in a list.
         */
-//        dlib::array<matrix<rgb_pixel>> faces;
-
-        // STORES FACIAL IMAGE CHIP(AKA. FACIAL PORTION OF CROPPED IMAGE) FOR FACIAL RECOGNITION.
-        /*
-            >> `for (auto face : facial_detector(<image>))`: a range-based for loop, iterating as many as number of detected face in FACIAL IMAGE.
-                ...returns dlib::rectangle of frontal face starting from left, top, right, and bottom boundary pixel position.
-            >> `auto shape = net_landmark(<image>, <face_rect>)`: determines the facial region with <face_rect> in the  original image <image>,
-                ...and from there extract 68-landmarks.
-                ...object "shape" has rect data and 68-landmarks data (which includes x,y pixel locations).
-            >> `dlib::get_face_chip_details(<landmark_data>,<crop_size(square)>,<crop_padding>)`: considering <crop_size> and <crop_padding>,
-                ...provides chip_detail object to `dlib::extract_image_chip()` for chipping reference based on landmark 5-point or 68-point.
-            >> `dlib::extract_image_chip(<input_image>,<chip_details>,<output_chip>)`: while <chip_details> works as a image-crop reference,
-                ...extract image_chip from <input_image> to <output_chip>.
-        */
-
-        cv::Mat user_img = cv::imread(userImg,cv::IMREAD_COLOR);
-
-        std::vector<dlib::rectangle> locations = recognizer.faceDetection(user_img);
         dlib::array<matrix<rgb_pixel>> faces = recognizer.faceLandMark(user_img,locations);
 
         // CREATE A VARIALBE "face_detected_user" FOR FUTURE FACIAL COMPARISON.
@@ -488,30 +476,9 @@ int main(int argc, char **argv ) {
 
         // __________ PROCESS OF PERSON DETECTION USING EXISTING FRAMEWORK MODEL. __________ //
 
-        // CAFFE의 PROTOTXT와 CAFFEMODEL는 DARKNET의 CONFIG와 WEIGHT 파일과 동일하다 종류의 파일이다;
-        // ...FOR PERSON DETECTION (NOT A FACIAL DETECTION)
-//        String prototxt = "models/MobileNetSSD_deploy.prototxt";
-//        String model = "models/MobileNetSSD_deploy.caffemodel";
 
-        // 클래스 목록을 수집한다.
-        /*
-            >> `cv::String::c_str()`: "std::string::c_str()"로서도 함수가 존재;
-                ...NULL(즉, 띄어쓰기 혹은 줄바꿈)이 있을 때마다 문자열을 나누어 행렬로 반환.
-            >> `cv::vector::push_back(<data>)`: <data>를 현재 벡터의 맨 마지막으로 넣어준다.
-                ...마치 스택 자료구조의 PUSH-BACK이라고 생각하면 된다.
-                    결과적으로, 모든 클래스 종류는 "classes"라는 벡터 변수에 저장된다.
-        */
-//        String classesFile = "names";
-//        ifstream ifs(classesFile.c_str());
-//        string line;
-//        std::vector<string> classes;
-//        while(getline(ifs,line))
-//            classes.push_back(line);
 
-        // CAFFE의 설정파일과 모델파일을 OpenCV에서 미리 준비된 신경망으로 불러 넣어준다:
-        // 이는 얼굴 탐지가 아닌 "사람 탐지"을 위해 사용된다.
-//        Net net1 = readNetFromCaffe(prototxt, model);
-//        net1.setPreferableTarget(DNN_TARGET_OPENCL);
+
 
         // 웹캠으로 촬영이 진행되는 동안...
         while(cap.isOpened()){
@@ -698,8 +665,6 @@ int main(int argc, char **argv ) {
                                 FONT_HERSHEY_DUPLEX, 1.0, Scalar(255, 255, 255), 2);
                     }
 
-//                    delete(&faces2);
-//                    delete(&locations2);
                 }
 
 
@@ -719,9 +684,6 @@ int main(int argc, char **argv ) {
             countFrame++;
 
         }// END OF WHILE LOOP
-
-//        delete(&locations);
-//        delete(&faces);
     }// END OF TRY BLOCK: WHOLE PROCESS FOR DETECTION AND AUTOMATION.
 
     // 예외처리 1: 랜드마크 마크 모델을 찾을 수 없습니다.
