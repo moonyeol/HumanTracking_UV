@@ -6,25 +6,25 @@
 //컴파일 방
 //g++ -std=c++11 -O3 -I.. /home/eon/dlib/dlib/all/source.cpp -lpthread -lX11 -ljpeg -DDLIB_JPEG_SUPPORT -o main main.cpp $(pkg-config opencv4 --libs --cflags)
 
-#include <opencv4/opencv2/core.hpp>
-#include <opencv4/opencv2/opencv.hpp>
-#include <opencv4/opencv2/highgui.hpp>
-#include <opencv4/opencv2/highgui/highgui.hpp>
-#include <opencv4/opencv2/imgproc.hpp>
-#include <opencv4/opencv2/dnn/dict.hpp>
-#include <opencv4/opencv2/cudaimgproc.hpp>
-#include <dlib/opencv/cv_image.h>
-#include <dlib/image_processing/frontal_face_detector.h>
-#include <dlib/image_processing.h>
-#include <dlib/image_io.h>
-#include <dlib/gui_widgets.h>
-#include <dlib/dnn.h>
-#include <dlib/image_transforms.h>
-#include <cstdlib>
-#include <iostream>
-#include <stdio.h>    /* Standard input/output definitions */
-#include <string>
-#include <string.h>   /* String function definitions */
+//#include <opencv4/opencv2/core.hpp>
+//#include <opencv4/opencv2/opencv.hpp>
+//#include <opencv4/opencv2/highgui.hpp>
+//#include <opencv4/opencv2/highgui/highgui.hpp>
+//#include <opencv4/opencv2/imgproc.hpp>
+//#include <opencv4/opencv2/dnn/dict.hpp>
+//#include <opencv4/opencv2/cudaimgproc.hpp>
+//#include <dlib/opencv/cv_image.h>
+//#include <dlib/image_processing/frontal_face_detector.h>
+//#include <dlib/image_processing.h>
+//#include <dlib/image_io.h>
+//#include <dlib/gui_widgets.h>
+//#include <dlib/dnn.h>
+//#include <dlib/image_transforms.h>
+//#include <cstdlib>
+//#include <iostream>
+//#include <stdio.h>    /* Standard input/output definitions */
+//#include <string>
+//#include <string.h>   /* String function definitions */
 #include <unistd.h>   /* UNIX standard function definitions */
 #include <fcntl.h>    /* File control definitions */
 #include <termios.h>  /* POSIX terminal control definitions */
@@ -85,7 +85,7 @@ using anet_type = loss_metric<fc_no_bias<128,avg_pool_everything<
                                                 max_pool<3,3,2,2,relu<affine<con<32,7,7,2,2,
                                                         input_rgb_image_sized<150>
                                                 >>>>>>>>>>>>;
-
+dlib::inpu
 
 const size_t inWidth = 300;
 const size_t inHeight = 300;
