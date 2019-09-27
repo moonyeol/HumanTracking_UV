@@ -223,7 +223,7 @@ public:
         return locations;
     }
 
-    dlib::array<matrix<rgb_pixel>> faceLandMark(Mat& frame,std::vector<dlib::rectangle>& locations) {
+    dlib::array<matrix<rgb_pixel>> faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations) {
         matrix<rgb_pixel> img;
         cv::Mat rgb_frame;
         dlib::assign_image(img, dlib::cv_image<rgb_pixel>(frame));
@@ -237,7 +237,7 @@ public:
         return result;
     }
 
-    std::vector<matrix<float,0,1>> faceEncoding(dlib::array<matrix<rgb_pixel>>& faces){
+    std::vector<matrix<float,0,1>> faceEncoding(dlib::array<matrix<rgb_pixel>> faces){
         return faceEncoder(faces,16);
     }
 
