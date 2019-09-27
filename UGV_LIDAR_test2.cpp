@@ -484,7 +484,8 @@ int main(int argc, char **argv ) {
 
             found = recognizer.humanDetection(frame);
 
-
+            /*__________ RPLIDAR A1이 주변 장애물을 스캔한다.GKO95 __________*/
+            rplidarA1.scan();
 
 
             if(countFrame%3==0) {
@@ -493,8 +494,7 @@ int main(int argc, char **argv ) {
                     
                     char* data;
                     
-                    /*__________ RPLIDAR A1이 주변 장애물을 스캔하고 값을 가져와 사방의 최소거리를 저장한다. __________*/
-                    rplidarA1.scan();
+
 
                     
                     std::vector<dlib::rectangle> locations2 = recognizer.faceDetection(frame);
@@ -565,11 +565,7 @@ int main(int argc, char **argv ) {
                             }
                         }   // END OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
 
-                        /*__________ RPLIDAR 행동교정 및 결과값 출력. GKO95 __________*/
-                        data = rplidarA1.returnMove(data);
-                        rplidarA1.result();
-                        
-                        write(fd, data, strlen(data));
+
 
                         //cout<<"data = "<<data<<endl;
                         names.push_back(name);
@@ -591,6 +587,14 @@ int main(int argc, char **argv ) {
 
 
             }
+                
+            /*__________ 스캔값을 가져와 사방의 최소거리를 저장한다. 그리고 RPLIDAR 행동교정 및 결과값 출력. GKO95 __________*/
+            rplidarA1.retrieve();
+            data = rplidarA1.returnMove(data);
+            rplidarA1.result();
+                        
+            write(fd, data, strlen(data));
+                
             double tt_opencvDNN = 0;
             double fpsOpencvDNN = 0;
 
