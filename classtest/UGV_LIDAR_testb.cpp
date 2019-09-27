@@ -238,8 +238,9 @@ public:
 int main(int argc, char **argv ) {
     int fd;
     char* movedata;
-    Serial_init Serial_init();
-    fd = Serial_init.init(); 
+     fd = Serial_init.init(); 
+     Serial_init Serial_init();
+   
     // RPLIDAR A1과 통신을 위한 장치 드라이버 생성. 제어는 드라이버를 통해서 진행된다: 예. rplidarA1 -> functionName().
     RPlidarDriver * rplidarA1 = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
         
@@ -547,7 +548,7 @@ int main(int argc, char **argv ) {
                         }   // END OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
 
                         /*__________ RPLIDAR 행동교정 함수 __________*/
-                        data = rplidarBehavior(movedata, distances);
+                        movedata = rplidarBehavior(movedata, distances);
                         write(fd, movedata, strlen(movedata));
 
                         //cout<<"data = "<<data<<endl;

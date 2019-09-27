@@ -10,7 +10,7 @@ class Serial_init
          void init();
 
     private: 
-        struct termios toptions;
+        
              
         void option();
        
