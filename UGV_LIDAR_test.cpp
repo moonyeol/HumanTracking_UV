@@ -288,7 +288,7 @@ int main(int argc, char **argv ) {
         int x2;
         int y2;
         bool found = true;// FIXME INEFFICIENT CODE
-        int count = 0;
+        int countFrame = 0;
         // Load face detection and pose estimation models.
 
         // __________ PREPARATION OF FACIAL RECOGNITION BY SETTING NEURAL NETWORK FOR FACIAL DETECTION AND RECOGNITION. __________ //
@@ -564,7 +564,7 @@ int main(int argc, char **argv ) {
 
 
 
-            if(count%3==0) {
+            if(countFrame%3==0) {
                 //face recoginition 구현 중
                 if (found) {
 
@@ -695,10 +695,10 @@ int main(int argc, char **argv ) {
                     int i = 0;
 
 
-                    for (int i = 0; i < locations.size(); i++) {
+                    for (int i = 0; i < locations2.size(); i++) {
                         cv::rectangle(frame, Point(locations2[i].left(), locations2[i].top()),
                                       Point(locations2[i].right(), locations2[i].bottom()), Scalar(0, 255, 0), 2);
-                        putText(frame, names[i], Point(locations[i].left() + 6, locations[i].top() - 6),
+                        putText(frame, names[i], Point(locations2[i].left() + 6, locations2[i].top() - 6),
                                 FONT_HERSHEY_DUPLEX, 1.0, Scalar(255, 255, 255), 2);
                     }
 
@@ -720,7 +720,7 @@ int main(int argc, char **argv ) {
             // 웹캠에서 촬영하는 영상을 보여준다; Enter 키를 누르면 종료.
             cv::imshow("HumanTrackingUV",frame);
             if (cv::waitKey(30)==13) break;
-                count++;
+            countFrame++;
 
         }// END OF WHILE LOOP
 
