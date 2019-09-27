@@ -241,9 +241,9 @@ public:
         return faceEncoder(faces,16);
     }
 
-    float calDistance(matrix<float, 0, 1> descriptors1, matrix<float, 0, 1> descriptors2){
-        return length(descriptors1-descriptors2);
-    }
+//    float calDistance(matrix<float, 0, 1> descriptors1, matrix<float, 0, 1> descriptors2){
+//        return length(descriptors1-descriptors2);
+//    }
 
 };
 
@@ -624,7 +624,7 @@ int main(int argc, char **argv ) {
                     // START OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
                     for (size_t i = 0; i < face_descriptors2.size(); ++i) {
                         name = "unknown";
-                        if (recognizer.calDistance(face_descriptors[0], face_descriptors2[i]) < 0.5) {
+                        if (length(face_descriptors[0] - face_descriptors2[i])< 0.5) {
                             name = "user";
                             long xcenter = (locations2[i].right() + locations2[i].left()) / 2;
                             long ycenter = (locations2[i].bottom() + locations2[i].top()) / 2;
