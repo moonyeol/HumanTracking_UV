@@ -26,7 +26,7 @@ rplidar::rplidar(): RESULT(NULL), rplidarDRIVER(NULL), platformMOVE(NULL)
     // RPLIDAR 제어는 드라이버를 통해서 진행된다: 예. rplidarA1 -> functionName().
     std::cout << "[INFO] RPLIDAR DRIVER:";
     rplidarDRIVER = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
-    std::cout << " ...READY!";
+    std::cout << " ...READY!" << std::endl;
 
     // 시리얼 포트 경로 "/dev/ttyUSB0"를 통해
     /*
