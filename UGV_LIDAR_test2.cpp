@@ -569,7 +569,7 @@ int main(int argc, char **argv ) {
             }   // END OF OUTER IF CONDITION
 
         rplidarA1.retrieve();
-        data = rplidarA1.behavior(data);
+        data = rplidarA1.returnMove(data);
         rplidarA1.result();
         
         write(fd, data, strlen(data));
