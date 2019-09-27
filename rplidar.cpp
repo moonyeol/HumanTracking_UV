@@ -94,8 +94,6 @@ void rplidar::scan() {
     */
     RplidarScanMode scanMode;
     rplidarDRIVER -> startScan(false, true, 0, &scanMode);
-
-    this->retrieve();
 }
 
 // 우선순위 결정 후 최종적으로 보내줄 이동신호를 반환한다.
