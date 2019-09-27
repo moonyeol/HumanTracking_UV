@@ -28,7 +28,9 @@ void Serial_init::init()
 }
 
 void Serial_init::option()
+
 {
+    struct termios toptions;
     toptions.c_cflag &= ~PARENB;//Enable parity generation on output and parity checking for input.
 
     toptions.c_cflag &= ~CSTOPB;//Set two stop bits, rather than one.
