@@ -396,8 +396,7 @@ int main(int argc, char **argv ) {
             >> `net_recognition(<input_data>,<batch_size>)`: uncertain of a purpose of a <batch_size> is; there's only one facial data here!
         */
         std::vector<matrix<float,0,1>> face_descriptors = net(faces,16);
-        delete(&locations);
-        delete(&faces);
+
 
 
         // __________ PROCESS OF PERSON DETECTION USING EXISTING FRAMEWORK MODEL. __________ //
@@ -724,7 +723,9 @@ int main(int argc, char **argv ) {
                 count++;
 
         }// END OF WHILE LOOP
-            
+
+        delete(&locations);
+        delete(&faces);
     }// END OF TRY BLOCK: WHOLE PROCESS FOR DETECTION AND AUTOMATION.
 
     // 예외처리 1: 랜드마크 마크 모델을 찾을 수 없습니다.
@@ -808,7 +809,7 @@ char* rplidarBehavior(/*char detectPosition, */char* platformMove, int *distance
 
 dlib::array<matrix<rgb_pixel>>& faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations, shape_predictor& pose_model) {
     matrix<rgb_pixel> img;
-//    cv::Mat rgb_frame;
+    cv::Mat rgb_frame;
 //    cvtColor(frame,rgb_frame,COLOR_BGR2RGB);
     dlib::assign_image(img, dlib::cv_image<rgb_pixel>(frame));
     dlib::array<matrix<rgb_pixel>>& result = *new dlib::array<matrix<rgb_pixel>>;
