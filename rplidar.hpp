@@ -13,6 +13,9 @@ class rplidar{
 
         // RPLIDAT A1 센서로 한 사이클 스캔한다.
         void scan();
+    
+        // RPLIDAR A1 센서 스캔 결과를 가져온다.
+        void retrieve();
 
         // 우선순위 결정 후 최종적으로 보내줄 이동신호를 반환한다.
         char* returnMove(char*);
@@ -33,9 +36,6 @@ class rplidar{
         // 스캔 데이터인 노드(node)를 담을 수 있는 배열을 생성한다.
         rplidar_response_measurement_node_hq_t nodes[8192];
         size_t nodeCount;
-
-        // RPLIDAR A1 센서 스캔 결과를 가져온다.
-        void retrieve();
 
         // RPLIDAR A1 센서 스캔 결과를 통해 사방 거리를 하나로 축약한다.
         void compressDistance();
