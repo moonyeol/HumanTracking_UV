@@ -631,13 +631,7 @@ int main(int argc, char **argv ) {
         
     // 영상인식과 자율주행이 모두 끝났으면 OpenCV 창을 닫는다.
     cv::destroyWindow("HumanTrackingUV");
-    
-    // RPLIDAR 모터 중지.
-    // 드라이버의 장치 연결을 끊는다.
-    // RPLIDAR A1과 통신을 위한 장치 드라이버 제거.
-    rplidarA1 -> stopMotor();
-    rplidarA1 -> disconnect();
-    RPlidarDriver::DisposeDriver(rplidarA1);
+   
         
     return 0;
 }
