@@ -31,8 +31,8 @@
 
 /*__________ RPLIDAR __________*/
 #include <rplidar.h>
-#include <cmath>
 #include "rplidar.hpp"
+#include <cmath>
 
 
 using namespace cv;
@@ -40,7 +40,6 @@ using namespace cv::dnn;
 using namespace dlib;
 using namespace std;
 using namespace rp::standalone::rplidar;
-
 
 
 #define CYCLE 360       // 한 사이클은 360도.
@@ -221,7 +220,7 @@ public:
         return locations;
     }
 
-    dlib::array<matrix<rgb_pixel>> faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations) {
+    dlib::array<matrix<rgb_pixel>> faceLandMark(Mat& frame,std::vector<dlib::rectangle>& locations) {
         matrix<rgb_pixel> img;
         cv::Mat rgb_frame;
         dlib::assign_image(img, dlib::cv_image<rgb_pixel>(frame));
@@ -249,8 +248,6 @@ public:
 
 
 int main(int argc, char **argv ) {
-        
-
 
     
 
@@ -326,8 +323,8 @@ int main(int argc, char **argv ) {
         return -1;
     }
 
-    /*__________  rplidar 클래스로 rplidarA1 객체 생성. GKO95 __________*/
-    class rplidar rplidarA1;
+    // RPLIDAR A1과 통신을 위한 장치 드라이버 생성. 제어는 드라이버를 통해서 진행된다: 예. rplidarA1 -> functionName().
+    class rplidar rplidarA1();
         
     try {   // TRY BLOCK CODE START: WHOLE PROCESS FOR DETECTION AND AUTOMATION.
 
@@ -476,6 +473,10 @@ int main(int argc, char **argv ) {
 
         // 웹캠으로 촬영이 진행되는 동안...
         while(cap.isOpened()){
+            
+            
+            rplidarA1.scan();
+            char* data = STOP;
                 
             // VIDEOCAPTURE 클래스의 "CAPTURE"는 촬영된 순간의 프레임을 cv::Mat 형태의 "FRAME" 오브젝트에 할당한다.
             cap >> frame;
@@ -483,17 +484,15 @@ int main(int argc, char **argv ) {
             resize(frame,frame, Size(640,480));
 
             found = recognizer.humanDetection(frame);
-           
-            char* data; // 플랫폼 이동신호
-
-            /*__________ RPLIDAR A1이 주변 장애물을 스캔한다.GKO95 __________*/
-            rplidarA1.scan();
 
 
-            if(countFrame%3==0) {
+
+
+            if(countFrame%3==0) {   // START OF OUTER IF CONDITION
                 //face recoginition 구현 중
-                if (found) {
+                if (found) {    // START OF INNER IF CONDITION.
 
+                    
 
                     std::vector<dlib::rectangle> locations2 = recognizer.faceDetection(frame);
 
@@ -536,63 +535,46 @@ int main(int argc, char **argv ) {
                             if (tempsize == 0) {
                                 tempsize = size;
                                 std::cout << "값을 저장하였습니다" << endl;
-                            } else {
+                            } 
+                            else {
                                 if (tempsize < size - 5) {
-                                    //cout<<"저장값 : "<<tempsize<<endl;
-                                    //cout<<"data = "<<data<<endl;
                                     tempsize = size;
                                     data = "b";
-
-                                    //data= "g";
-                                    //write(fd, data, strlen(data));
-
-                                } else if (tempsize > size + 5) {
+                                }
+                                else if (tempsize > size + 5) {
                                     cout << "저장값 : " << tempsize << endl;
                                     //cout<<"data = "<<data<<endl;
                                     tempsize = size;
                                     data = "g";
+                                } 
+                                else {data = "s";}
+                        }
+                    }   // END OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
+                    
 
-                                    //data = "b";
-                                    //write(fd, data, strlen(data));
+                    //cout<<"data = "<<data<<endl;
+                    names.push_back(name);
+                        
+                }   // END OF INNER IF CONDITION.
 
-                                } else {
-                                    data = "s";
-                                    //cout<<"data = "<<data<<endl;
-
-                                }
-                            }
-                        }   // END OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
-
-
-
-                        //cout<<"data = "<<data<<endl;
-                        names.push_back(name);
-                    }   // END OF IF CONDITION.
-
-                    int i = 0;
+                int i = 0;
 
 
-                    for (int i = 0; i < locations2.size(); i++) {
-                        cv::rectangle(frame, Point(locations2[i].left(), locations2[i].top()),
-                                      Point(locations2[i].right(), locations2[i].bottom()), Scalar(0, 255, 0), 2);
-                        putText(frame, names[i], Point(locations2[i].left() + 6, locations2[i].top() - 6),
-                                FONT_HERSHEY_DUPLEX, 1.0, Scalar(255, 255, 255), 2);
-                    }
-
-//                    delete(&faces2);
-//                    delete(&locations2);
+                for (int i = 0; i < locations2.size(); i++) {
+                    cv::rectangle(frame, Point(locations2[i].left(), locations2[i].top()), Point(locations2[i].right(), locations2[i].bottom()), Scalar(0, 255, 0), 2);
+                    putText(frame, names[i], Point(locations2[i].left() + 6, locations2[i].top() - 6), FONT_HERSHEY_DUPLEX, 1.0, Scalar(255, 255, 255), 2);
                 }
 
+//                delete(&faces2);
+//                delete(&locations2);
+            }   // END OF OUTER IF CONDITION
 
-            }
-                
-            /*__________ 스캔값을 가져와 사방의 최소거리를 저장한다. 그리고 RPLIDAR 행동교정 및 결과값 출력. GKO95 __________*/
-            rplidarA1.retrieve();
-            data = rplidarA1.returnMove(data);
-            rplidarA1.result();
-                        
-            write(fd, data, strlen(data));
-                
+        rplidarA1.retrieve();
+        data = rplidarA1.behavior(data);
+        rplidarA1.result();
+        
+        write(fd, data, strlen(data));
+        }   // END OF WHILE LOOP
             double tt_opencvDNN = 0;
             double fpsOpencvDNN = 0;
 
@@ -607,7 +589,7 @@ int main(int argc, char **argv ) {
             if (cv::waitKey(30)==13) break;
             countFrame++;
 
-        }// END OF WHILE LOOP
+        }
 
 //        delete(&locations);
 //        delete(&faces);
@@ -633,7 +615,6 @@ int main(int argc, char **argv ) {
         
     // 영상인식과 자율주행이 모두 끝났으면 OpenCV 창을 닫는다.
     cv::destroyWindow("HumanTrackingUV");
-    
         
     return 0;
 }
