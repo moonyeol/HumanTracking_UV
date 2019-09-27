@@ -377,7 +377,7 @@ int main(int argc, char **argv ) {
 //        matrix<rgb_pixel> user_img;
 //        load_image(user_img, "user.jpg");
 
-        Mat user_img = cv::imread("pic/user.jpg",cv::IMREAD_COLOR);
+        cv::Mat user_img = cv::imread("pic/user.jpg",cv::IMREAD_COLOR);
 //        for (auto face : detector(user_img)) {
 //            auto shape = pose_model(user_img, face);
 //            matrix<rgb_pixel> face_chip;
@@ -808,7 +808,7 @@ char* rplidarBehavior(/*char detectPosition, */char* platformMove, int *distance
 
 dlib::array<matrix<rgb_pixel>>& faceLandMark(Mat& frame,std::vector<dlib::rectangle> locations, shape_predictor& pose_model) {
     matrix<rgb_pixel> img;
-    Mat rgb_frame;
+//    cv::Mat rgb_frame;
 //    cvtColor(frame,rgb_frame,COLOR_BGR2RGB);
     dlib::assign_image(img, dlib::cv_image<rgb_pixel>(frame));
     dlib::array<matrix<rgb_pixel>>& result = *new dlib::array<matrix<rgb_pixel>>;
@@ -874,7 +874,7 @@ bool humanDetection(Mat& frame, Net& net, std::vector<string> classes){
             ...rank-3: number of object detected.
             ...rank-4: element < ? >, <label>, <confidence>, <coord_x1>, <coord_y1>, <coord_x2>, <coord_y2>
     */
-    Mat detection = net.forward();
+    cv::Mat detection = net.forward();
 
     for(int i =0; i < detection.size.p[2]; i++){
         float confidence = detection.at<float>(Vec<int,4>(0,0,i,2));
