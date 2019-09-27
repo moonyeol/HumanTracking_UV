@@ -257,7 +257,7 @@ class Serial_init {
     return fd;
     }
 
-    void Serial_init::option() {
+    void option() {
         struct termios toptions;
         toptions.c_cflag &= ~PARENB;//Enable parity generation on output and parity checking for input.
 
@@ -291,11 +291,11 @@ class Serial_init {
      class direction
 {
     private:
-        char *move;
+        char* move;
         long xcenter,tempsize = 0 ,size;
        
     public:
-    char* direction::compare(long left, long right)
+    char* compare(long left, long right)
     {
         size = right-left;
         xcenter = (right + left)/2;
@@ -338,7 +338,7 @@ class Serial_init {
 int main(int argc, char **argv ) {
 
      int fd;
-     char* movedata;
+     char* move;
      Serial_init Serial_init;
      fd = Serial_init.init();
      Serial_init.option();     
@@ -527,7 +527,7 @@ int main(int argc, char **argv ) {
                         if (length(face_descriptors[0] - face_descriptors2[i])< 0.5) {
                             name = "user";
                             direction direction;
-                            movedata = direction.compare(locations2[i].left(), locations2[i].right());
+                            move = direction.compare(locations2[i].left(), locations2[i].right());
                     
 
                     //cout<<"data = "<<data<<endl;
@@ -548,10 +548,10 @@ int main(int argc, char **argv ) {
             }   // END OF OUTER IF CONDITION
 
         rplidarA1.retrieve();
-        data = rplidarA1.returnMove(data);
+        move = rplidarA1.returnMove(move);
         rplidarA1.result();
         
-        write(fd, data, strlen(data));
+        write(fd, move, strlen(move));
         }   // END OF WHILE LOOP
             double tt_opencvDNN = 0;
             double fpsOpencvDNN = 0;
