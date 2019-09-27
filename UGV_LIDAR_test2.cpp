@@ -483,6 +483,8 @@ int main(int argc, char **argv ) {
             resize(frame,frame, Size(640,480));
 
             found = recognizer.humanDetection(frame);
+           
+            char* data; // 플랫폼 이동신호
 
             /*__________ RPLIDAR A1이 주변 장애물을 스캔한다.GKO95 __________*/
             rplidarA1.scan();
@@ -491,12 +493,8 @@ int main(int argc, char **argv ) {
             if(countFrame%3==0) {
                 //face recoginition 구현 중
                 if (found) {
-                    
-                    char* data;
-                    
 
 
-                    
                     std::vector<dlib::rectangle> locations2 = recognizer.faceDetection(frame);
 
 
