@@ -323,8 +323,7 @@ int main(int argc, char **argv ) {
         return -1;
     }
 
-    // RPLIDAR A1과 통신을 위한 장치 드라이버 생성. 제어는 드라이버를 통해서 진행된다: 예. rplidarA1 -> functionName().
-    class rplidar rplidarA1();
+    class rplidar rplidarA1;
         
     try {   // TRY BLOCK CODE START: WHOLE PROCESS FOR DETECTION AND AUTOMATION.
 
