@@ -245,6 +245,7 @@ public:
 };
 class Serial_init {
         public:
+        int fd;
         int init(){
         fd=open("/dev/ttyACM0", O_RDWR | O_NOCTTY );  // 컨트롤 c 로 취소안되게 하기 | O_NOCTTY
         if (fd == -1) {
@@ -257,7 +258,7 @@ class Serial_init {
     return fd;
     }
 
-    void Serial_init::option() {
+    void option() {
         struct termios toptions;
         toptions.c_cflag &= ~PARENB;//Enable parity generation on output and parity checking for input.
 
@@ -295,7 +296,7 @@ class Serial_init {
         long xcenter,tempsize = 0 ,size;
        
     public:
-    char* direction::compare(long left, long right)
+    char* compare(long left, long right)
     {
         size = right-left;
         xcenter = (right + left)/2;
