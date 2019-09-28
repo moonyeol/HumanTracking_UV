@@ -96,7 +96,7 @@ const cv::Scalar meanVal(104.0, 177.0, 123.0);
 
 const std::string caffeConfigFile = "models/deploy.prototxt";
 const std::string caffeWeightFile = "models/res10_300x300_ssd_iter_140000_fp16.caffemodel";
-long tempsize=0;
+
 
 const std::string  encodeDat = "models/dlib_face_recognition_resnet_model_v1.dat";
 const std::string  landmarkDat = "models/shape_predictor_68_face_landmarks.dat";
@@ -107,7 +107,7 @@ const std::string  fdWeightFile = "models/res10_300x300_ssd_iter_140000_fp16.caf
 const std::string  classesFile = "names";
 const std::string  userImg = "pic/user.jpg";
 // CAFFE의 PROTOTXT와 CAFFEMODEL는 DARKNET의 CONFIG와 WEIGHT 파일과 동일하다 종류의 파일이다;
-
+long tempsize=0;
 char* data = STOP;
 bool isEnd = false;
 
@@ -398,12 +398,12 @@ void humanTracking(){
                         long ycenter = (locations2[i].bottom() + locations2[i].top()) / 2;
                         long size = (locations2[i].right() - locations2[i].left());
 
-                        cout << "size = " << size << endl;
-                        if (tempsize = 0)
+                        
+                        if (tempsize == 0)
                         {
                             tempsize = size;
                         }
-                        else if (xcenter<100)
+                        else if (xcenter <100)
                         {
                             data = LEFT;
                         }
@@ -411,20 +411,23 @@ void humanTracking(){
                         {
                             data = RIGHT;
                         }
-                        else if (tempsize < size-1)
+                        else if (tempsize < size -1)
                         {
-                            tempsize = size;
+
                             data = BACK;
                         }
-                        else if (tempsize > size+1)
+                        else if (tempsize > size +1)
                         {
-                            tempsize = size;
                             data = GO;
                         }
-                        else
+                        else 
                         {
                             data = STOP;
                         }
+			cout << "size = " << size << endl;
+			cout << "tempsize = " << tempsize << endl;
+			tempsize =size;
+			cout <<"data(main) = "<< *data<<endl;
                     }   // END OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
 
 
@@ -488,7 +491,7 @@ void lidar(int fd) {
         rplidarA1.retrieve();
         move = rplidarA1.returnMove(data);
         rplidarA1.result();
-        write(fd, move, strlen(move));
+        write(fd, data, strlen(data));
     }
 }
 int main(int argc, char **argv ) {
