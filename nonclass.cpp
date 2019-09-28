@@ -403,11 +403,11 @@ void humanTracking(){
                         {
                             tempsize = size;
                         }
-                        else if (xcenter <100)
+                        else if (xcenter <180)
                         {
                             data = LEFT;
                         }
-                        else if (xcenter > 520)
+                        else if (xcenter > 400)
                         {
                             data = RIGHT;
                         }
