@@ -214,10 +214,10 @@ void rplidar::behavior(char* MOVE){
             for (int i = (DIRECTION/2) -1; i > 0; i--){
 
                 // 오른쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 왼쪽보다 거리적 여유가 많을 시 오른쪽으로 회전한다.
-                if ((rplidarDIST[i] > DIST_REF && rplidarDIST[i] >= rplidarDIST[DIRECTION - i] && rplidarDIST[DIRECTION - i] != 0) || rplidarDIST[i] == 0)
+                if (((rplidarDIST[i] > DIST_REF && rplidarDIST[i] >= rplidarDIST[DIRECTION - i] && rplidarDIST[DIRECTION - i] != 0) || rplidarDIST[i] == 0) && *platformMOVE != *RIGHT)
                     {platformMOVE = LEFT; break;}
                 // 반면 왼쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 오른쪽보다 거리적 여유가 많을 시에는 왼쪽으로 회전한다.
-                else if((rplidarDIST[DIRECTION - i] > DIST_REF  && rplidarDIST[i] <= rplidarDIST[DIRECTION - i] &&  rplidarDIST[i] != 0 ) || rplidarDIST[DIRECTION - i] == 0 )
+                else if(((rplidarDIST[DIRECTION - i] > DIST_REF  && rplidarDIST[i] <= rplidarDIST[DIRECTION - i] &&  rplidarDIST[i] != 0 ) || rplidarDIST[DIRECTION - i] == 0 ) && *platformMOVE != *LEFT)
                     {platformMOVE = RIGHT; break;}
             }
 
