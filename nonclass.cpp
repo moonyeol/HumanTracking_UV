@@ -5,6 +5,8 @@
 //
 //컴파일 방
 //g++ -std=c++11 -O3 -I.. /home/eon/dlib/dlib/all/source.cpp -lpthread -lX11 -ljpeg -DDLIB_JPEG_SUPPORT -o main main.cpp $(pkg-config opencv4 --libs --cflags)
+#include <opencv2/videoio.hpp>
+
 
 #include <opencv4/opencv2/core.hpp>
 #include <opencv4/opencv2/opencv.hpp>
@@ -481,6 +483,7 @@ void humanTracking(){
     {
         cout << e.what() << endl;
     }
+
     isEnd = true;
 }
 void lidar(int fd) {
