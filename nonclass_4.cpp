@@ -378,7 +378,7 @@ void humanTracking(){
 
         if(countFrame%3==0) {   // START OF OUTER IF CONDITION
             //face recoginition 구현 중
-            if (found) {    // START OF INNER IF CONDITION.
+           // if (found) {    // START OF INNER IF CONDITION.
 
 
 
@@ -447,7 +447,7 @@ void humanTracking(){
 
                 }
 
-            }   // END OF OUTER IF CONDITION
+           // }   // END OF OUTER IF CONDITION
 
 
         }   // END OF WHILE LOOP
