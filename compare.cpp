@@ -26,16 +26,16 @@ public:
 		else if (tempsize < size - 5)
 		{
 			tempsize = size;
-			*move = *"b";
+			move = "b";
 		}
 		else if (tempsize > size + 5)
 		{
 			tempsize = size;
-			*move = *"g";
+			move = "g";
 		}
 		else
 		{
-			*move = *"s";
+			move = "s";
 		}
 
 		return move;

@@ -4,7 +4,7 @@
 //위 3개 참고
 //
 //컴파일 방
-//g++ -std=c++11 -O3 -I.. /home/eon/dlib/dlib/all/source.cpp -lpthread -lX11 -ljpeg -DDLIB_JPEG_SUPPORT -o main main.cpp $(pkg-config opencv4 --libs --cflags)
+//g++ -std=c++11 -O3 -I/home/e-on/dlib /home/eon/dlib/dlib/all/source.cpp -lpthread -lX11 -ljpeg -DDLIB_JPEG_SUPPORT -o main main.cpp $(pkg-config opencv4 --libs --cflags)
 #include <opencv2/videoio.hpp>
 
 
@@ -33,9 +33,9 @@
 #include <thread>
 
 /*__________ RPLIDAR __________*/
-#include <rplidar.h>
-#include "rplidar.hpp"
-#include <cmath>
+//#include <rplidar.h>
+//#include "rplidar.hpp"
+//#include <cmath>
 
 
 using namespace cv;
@@ -296,35 +296,33 @@ public:
 
 void humanTracking(){
     try {   // TRY BLOCK CODE START: WHOLE PROCESS FOR DETECTION AND AUTOMATION.
-        Recognizer recognizer(landmarkDat,encodeDat,odConfigFile,odWeightFile,fdConfigFile,fdWeightFile,classesFile);
+    Recognizer recognizer(landmarkDat,encodeDat,odConfigFile,odWeightFile,fdConfigFile,fdWeightFile,classesFile);
 
-        // CREATE VECTOR OBJECT CALLED "detection1" WHICH CAN CONTAIN LIST OF MAT OBJECTS.
-        /*
-            >> `std::vector< std::vector< std::vector<Mat> > >`: Creates 3D vector array containing Mat data-type.
-        */
-        Mat frame;
-        cv::VideoCapture cap;
+    // CREATE VECTOR OBJECT CALLED "detection1" WHICH CAN CONTAIN LIST OF MAT OBJECTS.
+    /*
+        >> `std::vector< std::vector< std::vector<Mat> > >`: Creates 3D vector array containing Mat data-type.
+    */
+    Mat frame;
+    cv::VideoCapture cap;
 
-        // OPEN DEFAULT CAMERA OF `/dev/video0` WHERE ITS INTEGER IS FROM THE BACK.
-        /*
-            Set the video resolution by `cap` as designated pixel size, does not work on called video file.
-            Access, or "open" default camera which is presumes to be `/dev/video0` file
-                ...(which is where number 0 may have derived from).
-        */
+    // OPEN DEFAULT CAMERA OF `/dev/video0` WHERE ITS INTEGER IS FROM THE BACK.
+    /*
+        Set the video resolution by `cap` as designated pixel size, does not work on called video file.
+        Access, or "open" default camera which is presumes to be `/dev/video0` file
+            ...(which is where number 0 may have derived from).
+    */
 
-        cap.open(1); // 노트북 카메라는 cap.open(1) 또는 cap.open(-1)
-        // USB 카메라는 cap.open(0);
-        int x1;
-        int y1;
-        int x2;
-        int y2;
-        bool found = true;// FIXME INEFFICIENT CODE
-        int countFrame = 0;
-        // Load face detection and pose estimation models.
+    cap.open(0); // 노트북 카메라는 cap.open(1) 또는 cap.open(-1)
+    // USB 카메라는 cap.open(0);
+    int x1;
+    int y1;
+    int x2;
+    int y2;
+    bool found = true;// FIXME INEFFICIENT CODE
+    int countFrame = 0;
+    // Load face detection and pose estimation models.
 
-        // __________ PREPARATION OF FACIAL RECOGNITION BY SETTING NEURAL NETWORK FOR FACIAL DETECTION AND RECOGNITION. __________ //
-
-
+    // __________ PREPARATION OF FACIAL RECOGNITION BY SETTING NEURAL NETWORK FOR FACIAL DETECTION AND RECOGNITION. __________ //
 
 
 
@@ -332,141 +330,143 @@ void humanTracking(){
 
 
 
-        // __________ PROCESS OF ACQUIRING USER FACIAL DATA FOR A FUTURE USER RECOGNITION. __________ //
 
 
-        cv::Mat user_img = cv::imread(userImg,cv::IMREAD_COLOR);
-        std::vector<dlib::rectangle> locations = recognizer.faceDetection(user_img);
-        // PREPARE A VARIABLE TO STORE ALL OF DETECTED FACES.
-        /*
-            >> `dlib::array<dlib::matrix<dlib::rgb_pixel>>`: dlib::matrix<dlib::rgb_pixel> has been discussed above.
-                ...Since dlib::array store rank-1 tensor, the parameterized type is to store multiple number of image data in a list.
-        */
-        dlib::array<matrix<rgb_pixel>> faces = recognizer.faceLandMark(user_img,locations);
-
-        // CREATE A VARIALBE "face_detected_user" FOR FUTURE FACIAL COMPARISON.
-        /*
-            >> It is still unclear what the stored value `face_detected_user[0]` represents,
-                ...but it is possible the value is (1) Loss, (2) Score, or (3) Confidence.
-            >> `net_recognition(<input_data>,<batch_size>)`: uncertain of a purpose of a <batch_size> is; there's only one facial data here!
-        */
-        std::vector<matrix<float,0,1>> face_descriptors = recognizer.faceEncoding(faces);
+    // __________ PROCESS OF ACQUIRING USER FACIAL DATA FOR A FUTURE USER RECOGNITION. __________ //
 
 
+    cv::Mat user_img = cv::imread(userImg,cv::IMREAD_COLOR);
+    std::vector<dlib::rectangle> locations = recognizer.faceDetection(user_img);
+    // PREPARE A VARIABLE TO STORE ALL OF DETECTED FACES.
+    /*
+        >> `dlib::array<dlib::matrix<dlib::rgb_pixel>>`: dlib::matrix<dlib::rgb_pixel> has been discussed above.
+            ...Since dlib::array store rank-1 tensor, the parameterized type is to store multiple number of image data in a list.
+    */
+    dlib::array<matrix<rgb_pixel>> faces = recognizer.faceLandMark(user_img,locations);
 
-        // __________ PROCESS OF PERSON DETECTION USING EXISTING FRAMEWORK MODEL. __________ //
-
+    // CREATE A VARIALBE "face_detected_user" FOR FUTURE FACIAL COMPARISON.
+    /*
+        >> It is still unclear what the stored value `face_detected_user[0]` represents,
+            ...but it is possible the value is (1) Loss, (2) Score, or (3) Confidence.
+        >> `net_recognition(<input_data>,<batch_size>)`: uncertain of a purpose of a <batch_size> is; there's only one facial data here!
+    */
+    std::vector<matrix<float,0,1>> face_descriptors = recognizer.faceEncoding(faces);
 
 
 
-
-        // 웹캠으로 촬영이 진행되는 동안...
-        while(cap.isOpened()){
+    // __________ PROCESS OF PERSON DETECTION USING EXISTING FRAMEWORK MODEL. __________ //
 
 
 
 
-            // VIDEOCAPTURE 클래스의 "CAPTURE"는 촬영된 순간의 프레임을 cv::Mat 형태의 "FRAME" 오브젝트에 할당한다.
-            cap >> frame;
-            double t = cv::getTickCount();
-            resize(frame,frame, Size(640,480));
 
-            found = recognizer.humanDetection(frame);
+    // 웹캠으로 촬영이 진행되는 동안...
+    while(cap.isOpened()){
 
 
 
 
-            if(countFrame%3==0) {   // START OF OUTER IF CONDITION
-                //face recoginition 구현 중
-                if (found) {    // START OF INNER IF CONDITION.
+        // VIDEOCAPTURE 클래스의 "CAPTURE"는 촬영된 순간의 프레임을 cv::Mat 형태의 "FRAME" 오브젝트에 할당한다.
+        cap >> frame;
+        double t = cv::getTickCount();
+        resize(frame,frame, Size(640,480));
+
+        found = recognizer.humanDetection(frame);
 
 
 
-                    std::vector<dlib::rectangle> locations2 = recognizer.faceDetection(frame);
 
-
-                    dlib::array<matrix<rgb_pixel>> faces2 = recognizer.faceLandMark(frame,locations2);
-
-                    std::vector<matrix<float, 0, 1>> face_descriptors2 = recognizer.faceEncoding(faces2);
-                    std::vector<String> names;
-                    String name;
-
-                    // START OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
-                    for (size_t i = 0; i < face_descriptors2.size(); ++i) {
-                        name = "unknown";
-                        if (length(face_descriptors[0] - face_descriptors2[i])< 0.5) {
-                            name = "user";
-                            long xcenter = (locations2[i].right() + locations2[i].left()) / 2;
-                            long ycenter = (locations2[i].bottom() + locations2[i].top()) / 2;
-                            long size = (locations2[i].right() - locations2[i].left());
-
-
-                            if (tempsize == 0)
-                            {
-                                tempsize = size;
-                            }
-                            else if (xcenter <180)
-                            {
-                                data = LEFT;
-                            }
-                            else if (xcenter > 400)
-                            {
-                                data = RIGHT;
-                            }
-                            else if (tempsize < size -1)
-                            {
-
-                                data = BACK;
-                            }
-                            else if (tempsize > size +1)
-                            {
-                                data = GO;
-                            }
-                            else
-                            {
-                                data = STOP;
-                            }
-                            cout << "size = " << size << endl;
-                            cout << "tempsize = " << tempsize << endl;
-                            tempsize =size;
-                            cout <<"data(main) = "<< *data<<endl;
-                        }   // END OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
-
-
-                        //cout<<"data = "<<data<<endl;
-                        names.push_back(name);
-
-                    }   // END OF INNER IF CONDITION.
-
-                    int i = 0;
-
-
-                    for (int i = 0; i < locations2.size(); i++) {
-                        cv::rectangle(frame, Point(locations2[i].left(), locations2[i].top()), Point(locations2[i].right(), locations2[i].bottom()), Scalar(0, 255, 0), 2);
-                        putText(frame, names[i], Point(locations2[i].left() + 6, locations2[i].top() - 6), FONT_HERSHEY_DUPLEX, 1.0, Scalar(255, 255, 255), 2);
-
-                    }
-
-                }   // END OF OUTER IF CONDITION
-
-
-            }   // END OF WHILE LOOP
-            double tt_opencvDNN = 0;
-            double fpsOpencvDNN = 0;
+        if(countFrame%3==0) {   // START OF OUTER IF CONDITION
+            //face recoginition 구현 중
+            if (found) {    // START OF INNER IF CONDITION.
 
 
 
-            tt_opencvDNN = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-            fpsOpencvDNN = 1/tt_opencvDNN;
-            putText(frame, format("OpenCV DNN ; FPS = %.2f",fpsOpencvDNN), Point(10, 50), FONT_HERSHEY_SIMPLEX, 1.4, Scalar(0, 0, 255), 4);
-
-            // 웹캠에서 촬영하는 영상을 보여준다; Enter 키를 누르면 종료.
-            cv::imshow("HumanTrackingUV",frame);
-            if (cv::waitKey(30)==13) break;
-            countFrame++;
+                std::vector<dlib::rectangle> locations2 = recognizer.faceDetection(frame);
 
 
-        }// END OF WHILE LOOP
+                dlib::array<matrix<rgb_pixel>> faces2 = recognizer.faceLandMark(frame,locations2);
+
+                std::vector<matrix<float, 0, 1>> face_descriptors2 = recognizer.faceEncoding(faces2);
+                std::vector<String> names;
+                String name;
+
+                // START OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
+                for (size_t i = 0; i < face_descriptors2.size(); ++i) {
+                    name = "unknown";
+                    if (length(face_descriptors[0] - face_descriptors2[i])< 0.5) {
+                        name = "user";
+                        long xcenter = (locations2[i].right() + locations2[i].left()) / 2;
+                        long ycenter = (locations2[i].bottom() + locations2[i].top()) / 2;
+                        long size = (locations2[i].right() - locations2[i].left());
+
+                        
+                        if (tempsize == 0)
+                        {
+                            tempsize = size;
+                        }
+                        else if (xcenter <180)
+                        {
+                            data = LEFT;
+                        }
+                        else if (xcenter > 400)
+                        {
+                            data = RIGHT;
+                        }
+                        else if (tempsize < size -1)
+                        {
+
+                            data = BACK;
+                        }
+                        else if (tempsize > size +1)
+                        {
+                            data = GO;
+                        }
+                        else 
+                        {
+                            data = STOP;
+                        }
+			cout << "size = " << size << endl;
+			cout << "tempsize = " << tempsize << endl;
+			tempsize =size;
+			cout <<"data(main) = "<< *data<<endl;
+                    }   // END OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
+
+
+                    //cout<<"data = "<<data<<endl;
+                    names.push_back(name);
+
+                }   // END OF INNER IF CONDITION.
+
+                int i = 0;
+
+
+                for (int i = 0; i < locations2.size(); i++) {
+                    cv::rectangle(frame, Point(locations2[i].left(), locations2[i].top()), Point(locations2[i].right(), locations2[i].bottom()), Scalar(0, 255, 0), 2);
+                    putText(frame, names[i], Point(locations2[i].left() + 6, locations2[i].top() - 6), FONT_HERSHEY_DUPLEX, 1.0, Scalar(255, 255, 255), 2);
+
+                }
+
+            }   // END OF OUTER IF CONDITION
+
+
+        }   // END OF WHILE LOOP
+        double tt_opencvDNN = 0;
+        double fpsOpencvDNN = 0;
+
+
+
+        tt_opencvDNN = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+        fpsOpencvDNN = 1/tt_opencvDNN;
+        putText(frame, format("OpenCV DNN ; FPS = %.2f",fpsOpencvDNN), Point(10, 50), FONT_HERSHEY_SIMPLEX, 1.4, Scalar(0, 0, 255), 4);
+
+        // 웹캠에서 촬영하는 영상을 보여준다; Enter 키를 누르면 종료.
+        cv::imshow("HumanTrackingUV",frame);
+        if (cv::waitKey(30)==13) break;
+        countFrame++;
+
+
+     }// END OF WHILE LOOP
     }// END OF TRY BLOCK: WHOLE PROCESS FOR DETECTION AND AUTOMATION.
 
         // 예외처리 1: 랜드마크 마크 모델을 찾을 수 없습니다.
@@ -486,112 +486,112 @@ void humanTracking(){
 
     isEnd = true;
 }
-void lidar(int fd) {
-    class rplidar rplidarA1;
-    char *move;
-    while (!isEnd) {
-        rplidarA1.scan();
-        rplidarA1.retrieve();
-        move = rplidarA1.returnMove(data);
-        rplidarA1.result();
-        write(fd, data, strlen(data));
-    }
-}
+//void lidar(int fd) {
+//    class rplidar rplidarA1;
+//    char *move;
+//    while (!isEnd) {
+//        rplidarA1.scan();
+//        rplidarA1.retrieve();
+//        move = rplidarA1.returnMove(data);
+//        rplidarA1.result();
+//        write(fd, data, strlen(data));
+//    }
+//}
 int main(int argc, char **argv ) {
 
+    
+//
+//    int fd;
+//    fd=open("/dev/ttyACM0", O_RDWR | O_NOCTTY );  // 컨트롤 c 로 취소안되게 하기 | O_NOCTTY
+//
+//    //struct termios newtio;
+//    struct termios toptions;
+//
+//
+//
+//
+//    //fprintf(stderr,"init_serialport: opening port %s @ %d bps\n",
+//
+//    //        serialport,baud);
+//
+//
+//
+//    //fd = open(serialport, O_RDWR | O_NOCTTY | O_NDELAY);
+//
+//    if (fd == -1)  {
+//
+//        perror("init_serialport: Unable to open port ");
+//
+//        return -1;
+//
+//    }
+//
+//
+//
+//    if (tcgetattr(fd, &toptions) < 0) {
+//
+//        perror("init_serialport: Couldn't get term attributes");
+//
+//        return -1;
+//
+//    }
+//
+//
+//
+//
+//    // 8N1
+//
+//    toptions.c_cflag &= ~PARENB;//Enable parity generation on output and parity checking for input.
+//
+//    toptions.c_cflag &= ~CSTOPB;//Set two stop bits, rather than one.
+//
+//    toptions.c_cflag &= ~CSIZE;//Character size mask.  Values are CS5, CS6, CS7, or CS8.
+//
+//
+//
+//    // no flow control
+//
+//    toptions.c_cflag &= ~CRTSCTS;//(not in POSIX) Enable RTS/CTS (hardware) flow control. [requires _BSD_SOURCE or _SVID_SOURCE]
+//
+//    toptions.c_cflag = B115200 | CS8 | CLOCAL | CREAD; // CLOCAL : Ignore modem control lines CREAD :Enable receiver.
+//
+//    toptions.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl
+//    toptions.c_iflag = IGNPAR | ICRNL;
+//
+//    toptions.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG); // Enable canonical mode (described below)./Echo input characters.
+//    // If ICANON is also set, the ERASE character erases the preced‐ing input character, and WERASE erases the preceding word.
+//    // When any of the characters INTR, QUIT, SUSP, or DSUSP are received, generate the corresponding signal.
+//
+//    toptions.c_oflag &= ~OPOST; //Enable implementation-defined output processing.
+//
+//    // see: http://unixwiz.net/techtips/termios-vmin-vtime.html
+//    toptions.c_cc[VMIN]  = 0;
+//    toptions.c_cc[VTIME] = 20;
+//
+//    if( tcsetattr(fd, TCSANOW, &toptions) < 0) {
+//        perror("init_serialport: Couldn't set term attributes");
+//        return -1;
+//    }
 
 
-    int fd;
-    fd=open("/dev/ttyACM0", O_RDWR | O_NOCTTY );  // 컨트롤 c 로 취소안되게 하기 | O_NOCTTY
+        
 
-    //struct termios newtio;
-    struct termios toptions;
-
-
-
-
-    //fprintf(stderr,"init_serialport: opening port %s @ %d bps\n",
-
-    //        serialport,baud);
-
-
-
-    //fd = open(serialport, O_RDWR | O_NOCTTY | O_NDELAY);
-
-    if (fd == -1)  {
-
-        perror("init_serialport: Unable to open port ");
-
-        return -1;
-
-    }
-
-
-
-    if (tcgetattr(fd, &toptions) < 0) {
-
-        perror("init_serialport: Couldn't get term attributes");
-
-        return -1;
-
-    }
-
-
-
-
-    // 8N1
-
-    toptions.c_cflag &= ~PARENB;//Enable parity generation on output and parity checking for input.
-
-    toptions.c_cflag &= ~CSTOPB;//Set two stop bits, rather than one.
-
-    toptions.c_cflag &= ~CSIZE;//Character size mask.  Values are CS5, CS6, CS7, or CS8.
-
-
-
-    // no flow control
-
-    toptions.c_cflag &= ~CRTSCTS;//(not in POSIX) Enable RTS/CTS (hardware) flow control. [requires _BSD_SOURCE or _SVID_SOURCE]
-
-    toptions.c_cflag = B115200 | CS8 | CLOCAL | CREAD; // CLOCAL : Ignore modem control lines CREAD :Enable receiver.
-
-    toptions.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl
-    toptions.c_iflag = IGNPAR | ICRNL;
-
-    toptions.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG); // Enable canonical mode (described below)./Echo input characters.
-    // If ICANON is also set, the ERASE character erases the preced‐ing input character, and WERASE erases the preceding word.
-    // When any of the characters INTR, QUIT, SUSP, or DSUSP are received, generate the corresponding signal.
-
-    toptions.c_oflag &= ~OPOST; //Enable implementation-defined output processing.
-
-    // see: http://unixwiz.net/techtips/termios-vmin-vtime.html
-    toptions.c_cc[VMIN]  = 0;
-    toptions.c_cc[VTIME] = 20;
-
-    if( tcsetattr(fd, TCSANOW, &toptions) < 0) {
-        perror("init_serialport: Couldn't set term attributes");
-        return -1;
-    }
-
-
-
-
-    thread hThread(humanTracking);
-    thread lThread{lidar,fd};
-    hThread.join();
-    lThread.join();
-
-
-
+        thread hThread(humanTracking);
+//        thread lThread{lidar,fd};
+        hThread.join();
+//        lThread.join();
 
 
 
 
+
+
+        
     // 영상인식과 자율주행이 모두 끝나면 R/W 파일을 닫는다.
-    close(fd);
-
+//    close(fd);
+        
     // 영상인식과 자율주행이 모두 끝났으면 OpenCV 창을 닫는다.
     cv::destroyWindow("HumanTrackingUV");
-
+        
     return 0;
 }
