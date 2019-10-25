@@ -4,7 +4,7 @@
 //위 3개 참고
 //
 //컴파일 방
-//g++ -std=c++11 -O3 -I/home/e-on/dlib /home/eon/dlib/dlib/all/source.cpp -lpthread -lX11 -ljpeg -DDLIB_JPEG_SUPPORT -o main main.cpp $(pkg-config opencv4 --libs --cflags)
+//g++ -std=c++11 -O3 -I.. /home/eon/dlib/dlib/all/source.cpp -lpthread -lX11 -ljpeg -DDLIB_JPEG_SUPPORT -o main main.cpp $(pkg-config opencv4 --libs --cflags)
 #include <opencv2/videoio.hpp>
 
 
@@ -42,7 +42,7 @@ using namespace cv;
 using namespace cv::dnn;
 using namespace dlib;
 using namespace std;
-using namespace rp::standalone::rplidar;
+//using namespace rp::standalone::rplidar;
 
 
 #define CYCLE 360       // 한 사이클은 360도.
@@ -312,7 +312,7 @@ void humanTracking(){
             ...(which is where number 0 may have derived from).
     */
 
-    cap.open(0); // 노트북 카메라는 cap.open(1) 또는 cap.open(-1)
+    cap.open(1); // 노트북 카메라는 cap.open(1) 또는 cap.open(-1)
     // USB 카메라는 cap.open(0);
     int x1;
     int y1;
@@ -486,99 +486,100 @@ void humanTracking(){
 
     isEnd = true;
 }
-//void lidar(int fd) {
-//    class rplidar rplidarA1;
-//    char *move;
-//    while (!isEnd) {
-//        rplidarA1.scan();
-//        rplidarA1.retrieve();
-//        move = rplidarA1.returnMove(data);
-//        rplidarA1.result();
-//        write(fd, data, strlen(data));
-//    }
-//}
+/*
+void lidar(int fd) {
+    class rplidar rplidarA1;
+    char *move;
+    while (!isEnd) {
+        rplidarA1.scan();
+        rplidarA1.retrieve();
+        move = rplidarA1.returnMove(data);
+        rplidarA1.result();
+        write(fd, data, strlen(data));
+    }
+}*/
 int main(int argc, char **argv ) {
 
-    
-//
-//    int fd;
-//    fd=open("/dev/ttyACM0", O_RDWR | O_NOCTTY );  // 컨트롤 c 로 취소안되게 하기 | O_NOCTTY
-//
-//    //struct termios newtio;
-//    struct termios toptions;
-//
-//
-//
-//
-//    //fprintf(stderr,"init_serialport: opening port %s @ %d bps\n",
-//
-//    //        serialport,baud);
-//
-//
-//
-//    //fd = open(serialport, O_RDWR | O_NOCTTY | O_NDELAY);
-//
-//    if (fd == -1)  {
-//
-//        perror("init_serialport: Unable to open port ");
-//
-//        return -1;
-//
-//    }
-//
-//
-//
-//    if (tcgetattr(fd, &toptions) < 0) {
-//
-//        perror("init_serialport: Couldn't get term attributes");
-//
-//        return -1;
-//
-//    }
-//
-//
-//
-//
-//    // 8N1
-//
-//    toptions.c_cflag &= ~PARENB;//Enable parity generation on output and parity checking for input.
-//
-//    toptions.c_cflag &= ~CSTOPB;//Set two stop bits, rather than one.
-//
-//    toptions.c_cflag &= ~CSIZE;//Character size mask.  Values are CS5, CS6, CS7, or CS8.
-//
-//
-//
-//    // no flow control
-//
-//    toptions.c_cflag &= ~CRTSCTS;//(not in POSIX) Enable RTS/CTS (hardware) flow control. [requires _BSD_SOURCE or _SVID_SOURCE]
-//
-//    toptions.c_cflag = B115200 | CS8 | CLOCAL | CREAD; // CLOCAL : Ignore modem control lines CREAD :Enable receiver.
-//
-//    toptions.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl
-//    toptions.c_iflag = IGNPAR | ICRNL;
-//
-//    toptions.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG); // Enable canonical mode (described below)./Echo input characters.
-//    // If ICANON is also set, the ERASE character erases the preced‐ing input character, and WERASE erases the preceding word.
-//    // When any of the characters INTR, QUIT, SUSP, or DSUSP are received, generate the corresponding signal.
-//
-//    toptions.c_oflag &= ~OPOST; //Enable implementation-defined output processing.
-//
-//    // see: http://unixwiz.net/techtips/termios-vmin-vtime.html
-//    toptions.c_cc[VMIN]  = 0;
-//    toptions.c_cc[VTIME] = 20;
-//
-//    if( tcsetattr(fd, TCSANOW, &toptions) < 0) {
-//        perror("init_serialport: Couldn't set term attributes");
-//        return -1;
-//    }
+    /*
 
+    int fd;
+    fd=open("/dev/ttyACM0", O_RDWR | O_NOCTTY );  // 컨트롤 c 로 취소안되게 하기 | O_NOCTTY
+
+    //struct termios newtio;
+    struct termios toptions;
+
+
+
+
+    //fprintf(stderr,"init_serialport: opening port %s @ %d bps\n",
+
+    //        serialport,baud);
+
+
+
+    //fd = open(serialport, O_RDWR | O_NOCTTY | O_NDELAY);
+
+    if (fd == -1)  {
+
+        perror("init_serialport: Unable to open port ");
+
+        return -1;
+
+    }
+
+
+
+    if (tcgetattr(fd, &toptions) < 0) {
+
+        perror("init_serialport: Couldn't get term attributes");
+
+        return -1;
+
+    }
+
+
+
+
+    // 8N1
+
+    toptions.c_cflag &= ~PARENB;//Enable parity generation on output and parity checking for input.
+
+    toptions.c_cflag &= ~CSTOPB;//Set two stop bits, rather than one.
+
+    toptions.c_cflag &= ~CSIZE;//Character size mask.  Values are CS5, CS6, CS7, or CS8.
+
+
+
+    // no flow control
+
+    toptions.c_cflag &= ~CRTSCTS;//(not in POSIX) Enable RTS/CTS (hardware) flow control. [requires _BSD_SOURCE or _SVID_SOURCE]
+
+    toptions.c_cflag = B115200 | CS8 | CLOCAL | CREAD; // CLOCAL : Ignore modem control lines CREAD :Enable receiver.
+
+    toptions.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl
+    toptions.c_iflag = IGNPAR | ICRNL;
+
+    toptions.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG); // Enable canonical mode (described below)./Echo input characters.
+    // If ICANON is also set, the ERASE character erases the preced‐ing input character, and WERASE erases the preceding word.
+    // When any of the characters INTR, QUIT, SUSP, or DSUSP are received, generate the corresponding signal.
+
+    toptions.c_oflag &= ~OPOST; //Enable implementation-defined output processing.
+
+    // see: http://unixwiz.net/techtips/termios-vmin-vtime.html
+    toptions.c_cc[VMIN]  = 0;
+    toptions.c_cc[VTIME] = 20;
+
+    if( tcsetattr(fd, TCSANOW, &toptions) < 0) {
+        perror("init_serialport: Couldn't set term attributes");
+        return -1;
+    }
+*/
 
         
-
-        thread hThread(humanTracking);
+humanTracking();
+//        thread hThread(humanTracking);
 //        thread lThread{lidar,fd};
-        hThread.join();
+//        hThread.join();
 //        lThread.join();
 
 
