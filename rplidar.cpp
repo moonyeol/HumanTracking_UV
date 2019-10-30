@@ -209,23 +209,28 @@ void rplidar::behavior(char* MOVE){
     // 전방에 장애물이 존재할 경우 (0은 측정범위 밖); 후진과 정지는 따로 조건문이 주어져 있으므로 고려하지 않는다.
     else if (0 < rplidarDIST[DIRECTION/2] && rplidarDIST[DIRECTION/2] <= DIST_STOP && *platformMOVE != *BACK){
 
+        int moveDetermined = 0;
+
         if(*platformMOVE != *BACK){
             // 전 방향의 거리여부를 앞에서부터 뒤로 좌우를 동시에 확인한다 (후방 제외).
             for (int i = (DIRECTION/2) -1; i > 0; i--){
 
                 // 오른쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 왼쪽보다 거리적 여유가 많을 시 오른쪽으로 회전한다.
                 if (((rplidarDIST[i] > DIST_REF && rplidarDIST[i] >= rplidarDIST[DIRECTION - i] && rplidarDIST[DIRECTION - i] != 0) || rplidarDIST[i] == 0) && *platformMOVE != *RIGHT)
-                    {platformMOVE = LEFT; break;}
+                    {platformMOVE = LEFT; moveDetermined = 1; break;}
                 // 반면 왼쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 오른쪽보다 거리적 여유가 많을 시에는 왼쪽으로 회전한다.
                 else if(((rplidarDIST[DIRECTION - i] > DIST_REF  && rplidarDIST[i] <= rplidarDIST[DIRECTION - i] &&  rplidarDIST[i] != 0 ) || rplidarDIST[DIRECTION - i] == 0 ) && *platformMOVE != *LEFT)
-                    {platformMOVE = RIGHT; break;}
+                    {platformMOVE = RIGHT; moveDetermined = 1; break;}
             }
 
         // 위의 조건문을 만족하지 않았다는 것은 정해진 기준의 여유보다 거리가 적다는 의미이다.
         }
+
         // 후방 거리여부를 확인하고, 전방향이 막혀 있으면 움직이지 않는다.
-        else if (rplidarDIST[0] > DIST_REF || rplidarDIST[0] == 0) platformMOVE = BACK;
-        else platformMOVE = STOP;
+        if (moveDetermined == 0){
+            if (rplidarDIST[0] > DIST_REF || rplidarDIST[0] == 0) platformMOVE = BACK;
+            else platformMOVE = STOP;
+        }
     }
 
     // 뒤에 장애물이 있으면 뒤로 움직이는 신호에도 정지시킨다.
