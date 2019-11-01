@@ -410,12 +410,12 @@ void humanTracking(){
                             {
                                 data = RIGHT;
                             }
-                            else if (size<399)
+                            else if (size>71)
                             {
 
                                 data = BACK;
                             }
-                            else if (size>401)
+                            else if (size<69)
                             {
                                 data = GO;
                             }
