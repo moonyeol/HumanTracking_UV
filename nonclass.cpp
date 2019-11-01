@@ -424,8 +424,6 @@ void humanTracking(){
                                 data = STOP;
                             }
                             cout << "size = " << size << endl;
-                            cout << "tempsize = " << tempsize << endl;
-                            tempsize =size;
                             cout <<"data(main) = "<< *data<<endl;
                         }   // END OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
 
