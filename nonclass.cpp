@@ -371,14 +371,14 @@ void humanTracking(){
             double t = cv::getTickCount();
             resize(frame,frame, Size(640,480));
 
-            found = recognizer.humanDetection(frame);
+            //found = recognizer.humanDetection(frame);
 
 
 
 
             if(countFrame%3==0) {   // START OF OUTER IF CONDITION
                 //face recoginition 구현 중
-                if (found) {    // START OF INNER IF CONDITION.
+                //if (found) {    // START OF INNER IF CONDITION.
 
 
 
@@ -442,7 +442,7 @@ void humanTracking(){
 
                     }
 
-                }   // END OF OUTER IF CONDITION
+               // }   // END OF OUTER IF CONDITION
 
 
             }   // END OF WHILE LOOP
@@ -456,7 +456,7 @@ void humanTracking(){
             putText(frame, format("OpenCV DNN ; FPS = %.2f",fpsOpencvDNN), Point(10, 50), FONT_HERSHEY_SIMPLEX, 1.4, Scalar(0, 0, 255), 4);
 
             // 웹캠에서 촬영하는 영상을 보여준다; Enter 키를 누르면 종료.
-            cv::imshow("HumanTrackingUV",frame);
+            //cv::imshow("HumanTrackingUV",frame);
             if (cv::waitKey(30)==13) break;
             countFrame++;
 
