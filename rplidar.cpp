@@ -49,7 +49,7 @@ rplidar::rplidar(): RESULT(NULL), rplidarDRIVER(NULL), platformMOVE(NULL)
     // 연결이 실패하였으면 에러를 알리고, 객체를 자동적으로 파괴한다.
     else {
         std::cout << "...FAILED!" << std::endl;
-        std::cout << "[ERROR] FAILED TO CONNECT TO LIDAR." << std::endl;
+        std::cout << "[ERROR] FAILED TO CONNECT TO LIDAR: " << "0x" << std::hex << RESULT << std::dec << std::endl;
         this->~rplidar();
     }
 }
@@ -123,7 +123,7 @@ void rplidar::retrieve(){
     // 스캔을 실패하였을 경우 아래의 코드를 실행한다.
     else if (IS_FAIL(this->RESULT))
     {   
-        std::cout << "[ERROR] FAILED TO SCAN USING LIDAR." << std::endl;
+        std::cout << "[ERROR] FAILED TO SCAN USING LIDAR: " << "0x" << std::hex << RESULT << std::dec << std::endl;
     }
 }
 
@@ -133,7 +133,7 @@ char* rplidar::returnMove(char* MOVE){
     return platformMOVE;
 }
 
-// 계산된 거리와 최종 이동방향을 보여준다.
+// 계산된 거리와 최종 이동방향, 그리고 결과값을 보여준다.
 void rplidar::result(){
     
     std::cout << "=============" << std::endl;
@@ -166,12 +166,11 @@ void rplidar::compressDistance(){
         float distance = nodes[i].dist_mm_q2 / (1 << 2);
 
         // 위상 추가하여 방향성 교정.
-        // angle = angle + angleRange/2;
+        angle = angle + angleRange/2;
 
         // 하나의 방향이라고 인지할 수 있도록 정해놓은 batch 범위가 있으며, 중앙에서 얼마나 벗어난 각도인지 확인.
         // 가ㅄ이 크면 클수록 중앙과 가깝다는 의미.
         int angleOFF = lround(angle) % angleRange;
-        angleOFF = abs(angleOFF - angleRange/2);
         
         // 현재 위상가ㅄ이 0이고 이전 위상가ㅄ이 1이면 방향 카운터를 증가시킨다.
         // 반대로 설정하면 초반에 바로 (현재 = 1, 이전 = 0) 가ㅄ이 나올 수 있어 오류는 발생하지 않지만 첫 방향의 최소거리가 계산되지 않는다.
