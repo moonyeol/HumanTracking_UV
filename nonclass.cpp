@@ -458,6 +458,8 @@ void humanTracking(){
             // 웹캠에서 촬영하는 영상을 보여준다; Enter 키를 누르면 종료.
             //cv::imshow("HumanTrackingUV",frame);
             if (cv::waitKey(30)==13) break;
+		char key = getch();
+		if(key == 'q') break;
             countFrame++;
 
 
