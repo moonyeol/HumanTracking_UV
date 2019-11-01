@@ -401,11 +401,8 @@ void humanTracking(){
                             long size = (locations2[i].right() - locations2[i].left());
 
 
-                            if (tempsize == 0)
-                            {
-                                tempsize = size;
-                            }
-                            else if (xcenter <180)
+                           
+                            if (xcenter <180)
                             {
                                 data = LEFT;
                             }
