@@ -165,12 +165,12 @@ void rplidar::compressDistance(){
         float angle = nodes[i].angle_z_q14 * 90.f / (1 << 14);
         float distance = nodes[i].dist_mm_q2 / (1 << 2);
 
-        // 위상 추가하여 방향성 교정.
-        angle = angle + angleRange/2;
-
+        // 플랫폼 구조물로 인해서 인식되는 원치않은 각도를 무시한다.
+        if ((12.5 < angle && angle < 16.5) || (343.5 < angle && angle <347.5)) continue;
+        
         // 하나의 방향이라고 인지할 수 있도록 정해놓은 batch 범위가 있으며, 중앙에서 얼마나 벗어난 각도인지 확인.
         // 가ㅄ이 크면 클수록 중앙과 가깝다는 의미.
-        int angleOFF = lround(angle) % angleRange;
+        int angleOFF = abs((lround(angle) % angleRange)-angleRange/2);
         
         // 현재 위상가ㅄ이 0이고 이전 위상가ㅄ이 1이면 방향 카운터를 증가시킨다.
         // 반대로 설정하면 초반에 바로 (현재 = 1, 이전 = 0) 가ㅄ이 나올 수 있어 오류는 발생하지 않지만 첫 방향의 최소거리가 계산되지 않는다.
@@ -181,9 +181,6 @@ void rplidar::compressDistance(){
 
         // 루프를 돌기 전에 현재 위상가ㅄ을 이전 위상가ㅄ으로 할당한다.
         angleOFF_prev = angleOFF;
-
-        // 플랫폼 구조물로 인해서 인식되는 원치않은 각도를 무시한다.
-        if ((12.5 < angle && angle < 16.5) || (343.5 < angle && angle <347.5)) continue;
         
         // 최소거리를 저장한다.
         if (rplidarDIST[count] == 0) rplidarDIST[count] = distance;
