@@ -112,47 +112,8 @@ const std::string  classesFile = "names";
 const std::string  userImg = "pic/user.jpg";
 // CAFFE의 PROTOTXT와 CAFFEMODEL는 DARKNET의 CONFIG와 WEIGHT 파일과 동일하다 종류의 파일이다;
 long tempsize=0;
-char *data = STOP;
-char *socketdata;
 bool isEnd = false;
-char readBuff[BUFFER_SIZE];
-char sendBuff[BUFFER_SIZE];
-struct sockaddr_in serverAddress, clientAddress;
-int server_fd, client_fd;
-unsigned int client_addr_size;
-ssize_t receivedBytes;
-ssize_t sentBytes;
- 
-  
- 
-    socklen_t clientAddressLength = 0;
- 
-    memset(&serverAddress, 0, sizeof(serverAddress));
-    memset(&clientAddress, 0, sizeof(clientAddress));
- 
-    serverAddress.sin_family = AF_INET;
-    serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
-    serverAddress.sin_port = htons(20162);
- 
- 
-    // 서버 소켓 생성 및 서버 주소와 bind
- 
-    // 서버 소켓 생성(UDP니 SOCK_DGRAM이용)
-    if ((server_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) // SOCK_DGRAM : UDP
-    {
-        printf("Sever : can not Open Socket\n");
-        exit(0);
-    }
- 
-    // bind 과정
-    if (bind(server_fd, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
-    {
-        printf("Server : can not bind local address");
-        exit(0);
-    }
- 
- 
-    printf("Server: waiting connection request.\n");
+char *data = STOP;
 
 class Recognizer{
 
@@ -611,6 +572,16 @@ int main(int argc, char *argv[] ) {
         return -1;
     }
     char *socket_data;
+char readBuff[BUFFER_SIZE];
+char sendBuff[BUFFER_SIZE];
+struct sockaddr_in serverAddress, clientAddress;
+int server_fd, client_fd;
+unsigned int client_addr_size;
+ssize_t receivedBytes;
+ssize_t sentBytes;
+ 
+  
+ 
     socklen_t clientAddressLength = 0;
  
     memset(&serverAddress, 0, sizeof(serverAddress));
@@ -639,6 +610,7 @@ int main(int argc, char *argv[] ) {
  
  
     printf("Server: waiting connection request.\n");
+
     while(1){
 
         // 클라이언트 IP 확인
