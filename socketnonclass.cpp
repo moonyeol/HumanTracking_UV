@@ -112,8 +112,8 @@ const std::string  classesFile = "names";
 const std::string  userImg = "pic/user.jpg";
 // CAFFE의 PROTOTXT와 CAFFEMODEL는 DARKNET의 CONFIG와 WEIGHT 파일과 동일하다 종류의 파일이다;
 long tempsize=0;
-char* data = STOP;
-char* socketdata;
+char *data = STOP;
+char *socketdata;
 bool isEnd = false;
 char readBuff[BUFFER_SIZE];
 char sendBuff[BUFFER_SIZE];
@@ -336,6 +336,7 @@ public:
 
 
 void humanTracking(){
+    cout<<"humanTrackig Thread"<<endl;
     try {   // TRY BLOCK CODE START: WHOLE PROCESS FOR DETECTION AND AUTOMATION.
         Recognizer recognizer(landmarkDat,encodeDat,odConfigFile,odWeightFile,fdConfigFile,fdWeightFile,classesFile);
 
@@ -403,55 +404,14 @@ void humanTracking(){
 
         // 웹캠으로 촬영이 진행되는 동안...
         while(cap.isOpened()){
- 	std::string a("end\n");
-	std::string b("start\n");
-        // 클라이언트 IP 확인
-        struct sockaddr_in connectSocket;
-        socklen_t connectSocketLength = sizeof(connectSocket);
-        getpeername(client_fd, (struct sockaddr*)&clientAddress, &connectSocketLength);
-        char clientIP[sizeof(clientAddress.sin_addr) + 1] = { 0 };
-        sprintf(clientIP, "%s", inet_ntoa(clientAddress.sin_addr));
-        // 접속이 안되었을 때는 while에서 출력 x
-        if(strcmp(clientIP,"0.0.0.0") != 0)
-            printf("Client : %s\n", clientIP);
- 
- 
-        //소켓통신 시작
-        client_addr_size = sizeof(clientAddress);
- 
-        receivedBytes = recvfrom(server_fd, readBuff, BUFF_SIZE, 0, (struct sockaddr*)&clientAddress, &client_addr_size);
-	socketdata = readBuff;
-	printf("%s \n",socketdata);
-	
-	//main 종료
-	if(a.compare(socketdata) == 0){
-	close(fd);
-	close(sever_fd);
-	cv::destroyWindow("HumanTrackingUV");
-	break;
-	}
-	//else if(b.compare(data) == 0){
-	//cout<<"프로세스를 시작합니다"<<endl;
-	//} 
-        readBuff[receivedBytes] = '\0';
-	//printf("%s",readBuff);
-	
-        //fputs(readBuff, stdout);
-        fflush(stdout);
-	
-        sprintf(sendBuff, "%s", readBuff);
-        sentBytes = sendto(server_fd, sendBuff, strlen(sendBuff), 0, (struct sockaddr*)&clientAddress, sizeof(clientAddress));
-//소켓통신 끝
-
-
-
-
+ 	
             // VIDEOCAPTURE 클래스의 "CAPTURE"는 촬영된 순간의 프레임을 cv::Mat 형태의 "FRAME" 오브젝트에 할당한다.
             cap >> frame;
             double t = cv::getTickCount();
             resize(frame,frame, Size(640,480));
 
             //found = recognizer.humanDetection(frame);
+            found = false;
 
 
 
@@ -475,6 +435,7 @@ void humanTracking(){
                     for (size_t i = 0; i < face_descriptors2.size(); ++i) {
                         name = "unknown";
                         if (length(face_descriptors[0] - face_descriptors2[i])< 0.5) {
+                            found = true;
                             name = "user";
                             long xcenter = (locations2[i].right() + locations2[i].left()) / 2;
                             long ycenter = (locations2[i].bottom() + locations2[i].top()) / 2;
@@ -507,7 +468,7 @@ void humanTracking(){
                             cout <<"data(main) = "<< *data<<endl;
                         }   // END OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
 
-
+                         if(!found){data = STOP;}
                         //cout<<"data = "<<data<<endl;
                         names.push_back(name);
 
@@ -564,6 +525,7 @@ void humanTracking(){
     isEnd = true;
 }
 void lidar(int fd) {
+    cout<<"lidar thread"<<endl;
     class rplidar rplidarA1;
     char *move;
     while (!isEnd) {
@@ -575,37 +537,8 @@ void lidar(int fd) {
     }
 }
 int main(int argc, char *argv[] ) {
-socklen_t clientAddressLength = 0;
- 
-    memset(&serverAddress, 0, sizeof(serverAddress));
-    memset(&clientAddress, 0, sizeof(clientAddress));
- 
-    serverAddress.sin_family = AF_INET;
-    serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
-    serverAddress.sin_port = htons(20162);
- 
- 
-    // 서버 소켓 생성 및 서버 주소와 bind
- 
-    // 서버 소켓 생성(UDP니 SOCK_DGRAM이용)
-    if ((server_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) // SOCK_DGRAM : UDP
-    {
-        printf("Sever : can not Open Socket\n");
-        exit(0);
-    }
- 
-    // bind 과정
-    if (bind(server_fd, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
-    {
-        printf("Server : can not bind local address");
-        exit(0);
-    }
- 
- 
-    printf("Server: waiting connection request.\n");
-
-
-
+    std::string end("end\n");
+	std::string start("start\n");
     int fd;
     fd=open("/dev/ttyACM0", O_RDWR | O_NOCTTY );  // 컨트롤 c 로 취소안되게 하기 | O_NOCTTY
 
@@ -677,14 +610,77 @@ socklen_t clientAddressLength = 0;
         perror("init_serialport: Couldn't set term attributes");
         return -1;
     }
+    char *socket_data;
+    socklen_t clientAddressLength = 0;
+ 
+    memset(&serverAddress, 0, sizeof(serverAddress));
+    memset(&clientAddress, 0, sizeof(clientAddress));
+ 
+    serverAddress.sin_family = AF_INET;
+    serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+    serverAddress.sin_port = htons(20162);
+ 
+ 
+    // 서버 소켓 생성 및 서버 주소와 bind
+ 
+    // 서버 소켓 생성(UDP니 SOCK_DGRAM이용)
+    if ((server_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) // SOCK_DGRAM : UDP
+    {
+        printf("Sever : can not Open Socket\n");
+        exit(0);
+    }
+ 
+    // bind 과정
+    if (bind(server_fd, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
+    {
+        printf("Server : can not bind local address");
+        exit(0);
+    }
+ 
+ 
+    printf("Server: waiting connection request.\n");
+    while(1){
 
-
-
-
-    thread hThread(humanTracking);
+        // 클라이언트 IP 확인
+        struct sockaddr_in connectSocket;
+        socklen_t connectSocketLength = sizeof(connectSocket);
+        getpeername(client_fd, (struct sockaddr*)&clientAddress, &connectSocketLength);
+        char clientIP[sizeof(clientAddress.sin_addr) + 1] = { 0 };
+        sprintf(clientIP, "%s", inet_ntoa(clientAddress.sin_addr));
+        // 접속이 안되었을 때는 while에서 출력 x
+        if(strcmp(clientIP,"0.0.0.0") != 0)
+            printf("Client : %s\n", clientIP);
+ 
+ 
+        //소켓통신 시작
+        client_addr_size = sizeof(clientAddress); 
+        receivedBytes = recvfrom(server_fd, readBuff, BUFF_SIZE, 0, (struct sockaddr*)&clientAddress, &client_addr_size);
+	    socket_data = readBuff;
+	    printf("%s \n",socketdata);
+	
+	//main 종료
+	if(end.compare(socket_data) == 0){
+	close(fd);
+	close(sever_fd);
+	cv::destroyWindow("HumanTrackingUV");
+	break;
+	}
+	else if(start.compare(socket_data) == 0){
+	thread hThread(humanTracking);
     thread lThread{lidar,fd};
     hThread.join();
-    lThread.join();
+    lThread.join();}
+    else {cout<<"알 수 없는 명령어 입니다. 다시 입력해주세요."<<endl;}
+        readBuff[receivedBytes] = '\0';
+	//printf("%s",readBuff);
+	
+        //fputs(readBuff, stdout);
+        fflush(stdout);
+	
+        sprintf(sendBuff, "%s", readBuff);
+        sentBytes = sendto(server_fd, sendBuff, strlen(sendBuff), 0, (struct sockaddr*)&clientAddress, sizeof(clientAddress));
+//소켓통신 끝
+    }
 
 
 
