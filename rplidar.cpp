@@ -49,7 +49,7 @@ rplidar::rplidar(): RESULT(NULL), rplidarDRIVER(NULL), platformMOVE(NULL)
     // 연결이 실패하였으면 에러를 알리고, 객체를 자동적으로 파괴한다.
     else {
         std::cout << "...FAILED!" << std::endl;
-        std::cout << "[ERROR] FAILED TO CONNECT TO LIDAR: " << "0x" << std::hex << RESULT << std::dec << std::endl;
+        std::cout << "[ERROR] FAILED TO CONNECT TO LIDAR." << std::endl;
         this->~rplidar();
     }
 }
@@ -117,23 +117,22 @@ void rplidar::retrieve(){
 
         // 순서를 오름차순으로 재배열한다.
         rplidarDRIVER -> ascendScanData(this->nodes, this->nodeCount);
-        this->compressDistance();
+        //this->compressDistance();
     }
 
     // 스캔을 실패하였을 경우 아래의 코드를 실행한다.
     else if (IS_FAIL(this->RESULT))
     {   
-        std::cout << "[ERROR] FAILED TO SCAN USING LIDAR: " << "0x" << std::hex << RESULT << std::dec << std::endl;
+        std::cout << "[ERROR] FAILED TO SCAN USING LIDAR." << std::endl;
     }
 }
 
 // 우선순위 결정 후 최종적으로 보내줄 이동신호를 반환한다.
 char* rplidar::returnMove(char* MOVE){
-    this->behavior(MOVE);
-    return platformMOVE;
+    return this->behavior(MOVE);
 }
 
-// 계산된 거리와 최종 이동방향, 그리고 결과값을 보여준다.
+// 계산된 거리와 최종 이동방향을 보여준다.
 void rplidar::result(){
     
     std::cout << "=============" << std::endl;
@@ -154,7 +153,7 @@ void rplidar::compressDistance(){
 
     // <angleRange>: 총 방향 개수, <distances[]>: 거리를 담는 배열, <count>: 방향 카운터, <angleOF_prev>: 이전 위상가ㅄ을 받아내기 위한 변수.
     int angleRange = CYCLE/DIRECTION;
-    int count = 0, angleOFF_prev = NULL;
+    int count = 0, angleOFF_prev = -1;
 
     std::fill(rplidarDIST, rplidarDIST+DIRECTION, 0);
 
@@ -167,11 +166,15 @@ void rplidar::compressDistance(){
 
         // 플랫폼 구조물로 인해서 인식되는 원치않은 각도를 무시한다.
         if ((12.5 < angle && angle < 16.5) || (343.5 < angle && angle <347.5)) continue;
-        
-        // 하나의 방향이라고 인지할 수 있도록 정해놓은 batch 범위가 있으며, 중앙에서 얼마나 벗어난 각도인지 확인.
-        // 가ㅄ이 크면 클수록 중앙과 가깝다는 의미.
+
+        // std::cout << nodes[i].angle_z_q14 * 90.f / (1 << 14) << ", " << nodes[i].dist_mm_q2 / (1 << 2) << std::endl;
+
+        // 추가위상을 더한다. 이를 modulus 처리하면 가ㅄ이 가장 큰 곳(4방향에서는 거의 45에 가까운 가ㅄ)은 방향성의 중심이 되는 곳이 된다.
+        // 반대로 0은 방향성이 바뀌는 경계선이 된다.
         int angleOFF = abs((lround(angle) % angleRange)-angleRange/2);
         
+        std::cout << angle - angleRange/2  << ": " << lround(angle) << " % " << angleRange << " = " << angleOFF << std::endl;
+
         // 현재 위상가ㅄ이 0이고 이전 위상가ㅄ이 1이면 방향 카운터를 증가시킨다.
         // 반대로 설정하면 초반에 바로 (현재 = 1, 이전 = 0) 가ㅄ이 나올 수 있어 오류는 발생하지 않지만 첫 방향의 최소거리가 계산되지 않는다.
         if (angleOFF == 0 && angleOFF_prev == 1) count++;
@@ -186,53 +189,52 @@ void rplidar::compressDistance(){
         if (rplidarDIST[count] == 0) rplidarDIST[count] = distance;
         else if (rplidarDIST[count] > distance && distance != 0) rplidarDIST[count] = distance;
     }
+
+    for(int i =0; i < DIRECTION; i++){
+
+        std::cout << rplidarDIST[i] << std::endl; 
+
+    }
 }
 
 // RPLIDAR 거리와 플랫폼 이동 신호를 통합하여 우선순위를 결정한다.
-void rplidar::behavior(char* MOVE){
+char* rplidar::behavior(char* MOVE){
 
     this->platformMOVE = MOVE;
 
-    // REFERENCE
-    /*
-        >> detectPostion: 영상에 탐지된 대상자가 왼쪽(l) 혹은 오른쪽(r)에 있는지 알려주는 파라미터.
-        >> platformMOVE: 영상에 탐지된 대상자를 기반으로 전진(g), 후진(b), 좌회전(l), 우회전(r), 혹은 정지(s)하는지 알려주는 파라미터.
-        >> rplidarDIST = 전방으로 시작으로 시계방향으로 거리를 알려주는 파라미터; {전방, 우, 우X2, ..., 우X(n-1), 후방, 좌X(n-1),  ... , 좌X2, 좌}. 0은 측정범위 밖.
-    */
-
     // 정지 신호에는 무조건 정지한다.
-    if (*platformMOVE == *STOP) {platformMOVE = STOP;}
-    // 전방에 장애물이 존재할 경우 (0은 측정범위 밖); 후진과 정지는 따로 조건문이 주어져 있으므로 고려하지 않는다.
-    else if (0 < rplidarDIST[DIRECTION/2] && rplidarDIST[DIRECTION/2] <= DIST_STOP && *platformMOVE != *BACK){
+    if (*platformMOVE == *STOP) return STOP;
 
-        int moveDetermined = 0;
+    // 후방 신호가 아닐 경우 장애물이 있으면...
+    else if (*platformMOVE != *BACK){
 
-        if(*platformMOVE != *BACK){
-            // 전 방향의 거리여부를 앞에서부터 뒤로 좌우를 동시에 확인한다 (후방 제외).
+        // ---- 전방에 장애물이 존재할 경우 (0은 측정범위 밖); 후진과 정지는 따로 조건문이 주어져 있으므로 고려하지 않는다.
+        if (0 < rplidarDIST[DIRECTION/2] && rplidarDIST[DIRECTION/2] <= DIST_STOP) {
+
+            // 앞에서부터 뒤로 좌우 거리를 확인한다 (후방 제외).
             for (int i = (DIRECTION/2) -1; i > 0; i--){
-
+    
                 // 오른쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 왼쪽보다 거리적 여유가 많을 시 오른쪽으로 회전한다.
-                if (((rplidarDIST[i] > DIST_REF && rplidarDIST[i] >= rplidarDIST[DIRECTION - i] && rplidarDIST[DIRECTION - i] != 0) || rplidarDIST[i] == 0) && *platformMOVE != *RIGHT)
-                    {platformMOVE = LEFT; moveDetermined = 1; break;}
+                if (((rplidarDIST[i] > DIST_REF && rplidarDIST[i] >= rplidarDIST[DIRECTION - i] && rplidarDIST[DIRECTION - i] > 0) || rplidarDIST[i] == 0) && *platformMOVE != *LEFT)
+                    {return RIGHT;}
                 // 반면 왼쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 오른쪽보다 거리적 여유가 많을 시에는 왼쪽으로 회전한다.
-                else if(((rplidarDIST[DIRECTION - i] > DIST_REF  && rplidarDIST[i] <= rplidarDIST[DIRECTION - i] &&  rplidarDIST[i] != 0 ) || rplidarDIST[DIRECTION - i] == 0 ) && *platformMOVE != *LEFT)
-                    {platformMOVE = RIGHT; moveDetermined = 1; break;}
+                else if(((rplidarDIST[DIRECTION - i] > DIST_REF  && rplidarDIST[i] <= rplidarDIST[DIRECTION - i] &&  rplidarDIST[i] > 0 ) || rplidarDIST[DIRECTION - i] == 0 ) && *platformMOVE != *RIGHT)
+                    {return LEFT;}
             }
 
-        // 위의 조건문을 만족하지 않았다는 것은 정해진 기준의 여유보다 거리가 적다는 의미이다.
+            // 후방 거리여부를 확인하고, 전방향이 막혀 있으면 움직이지 않는다.
+            if (rplidarDIST[0] > DIST_REF || rplidarDIST[0] == 0) return BACK;
+            else return STOP;
+
         }
 
-        // 후방 거리여부를 확인하고, 전방향이 막혀 있으면 움직이지 않는다.
-        if (moveDetermined == 0){
-            if (rplidarDIST[0] > DIST_REF || rplidarDIST[0] == 0) platformMOVE = BACK;
-            else platformMOVE = STOP;
-        }
+        return platformMOVE;
     }
-
-    // 뒤에 장애물이 있으면 뒤로 움직이는 신호에도 정지시킨다.
-    else if (*platformMOVE == *BACK && rplidarDIST[0] > 0 && rplidarDIST[0] <= DIST_REF) {platformMOVE = STOP;}
     
-    // 아무런 조건을 만족하지 않으면 장애물의 구애를 받지 않는다는 의미로 신호대로 움직인다.
+    // 후방 신호일 경우 장애물이 있으면 정지.
+    else if (*platformMOVE == *BACK && rplidarDIST[0] > 0 && rplidarDIST[0] <= DIST_REF) return STOP;
+
+    return platformMOVE;
 
 }
 /*__________ END: PRIVATE MEMBERS __________*/
