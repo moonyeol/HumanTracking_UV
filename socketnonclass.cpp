@@ -8,13 +8,13 @@
 #include <opencv2/videoio.hpp>
 
 
-#include <opencv4/opencv2/core.hpp>
-#include <opencv4/opencv2/opencv.hpp>
-#include <opencv4/opencv2/highgui.hpp>
-#include <opencv4/opencv2/highgui/highgui.hpp>
-#include <opencv4/opencv2/imgproc.hpp>
-#include <opencv4/opencv2/dnn/dict.hpp>
-#include <opencv4/opencv2/cudaimgproc.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/dnn/dict.hpp>
+#include <opencv2/cudaimgproc.hpp>
 #include <dlib/opencv/cv_image.h>
 #include <dlib/image_processing/frontal_face_detector.h>
 #include <dlib/image_processing.h>
@@ -23,6 +23,7 @@
 #include <dlib/dnn.h>
 #include <dlib/image_transforms.h>
 #include <cstdlib>
+#include <stdlib.h>
 #include <iostream>
 #include <stdio.h>    /* Standard input/output definitions */
 #include <string>
@@ -36,8 +37,6 @@
 #include <rplidar.h>
 #include "rplidar.hpp"
 #include <cmath>
-/*__________ SocketServer __________*/
-#include "socket"
 
 
 using namespace cv;
@@ -112,8 +111,8 @@ const std::string  classesFile = "names";
 const std::string  userImg = "pic/user.jpg";
 // CAFFE의 PROTOTXT와 CAFFEMODEL는 DARKNET의 CONFIG와 WEIGHT 파일과 동일하다 종류의 파일이다;
 long tempsize=0;
+char* data = STOP;
 bool isEnd = false;
-char *data = STOP;
 
 class Recognizer{
 
@@ -297,7 +296,6 @@ public:
 
 
 void humanTracking(){
-    cout<<"humanTrackig Thread"<<endl;
     try {   // TRY BLOCK CODE START: WHOLE PROCESS FOR DETECTION AND AUTOMATION.
         Recognizer recognizer(landmarkDat,encodeDat,odConfigFile,odWeightFile,fdConfigFile,fdWeightFile,classesFile);
 
@@ -365,14 +363,16 @@ void humanTracking(){
 
         // 웹캠으로 촬영이 진행되는 동안...
         while(cap.isOpened()){
- 	
+
+
+
+
             // VIDEOCAPTURE 클래스의 "CAPTURE"는 촬영된 순간의 프레임을 cv::Mat 형태의 "FRAME" 오브젝트에 할당한다.
             cap >> frame;
             double t = cv::getTickCount();
             resize(frame,frame, Size(640,480));
-
+	    found = false;
             //found = recognizer.humanDetection(frame);
-            found = false;
 
 
 
@@ -395,8 +395,7 @@ void humanTracking(){
                     // START OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
                     for (size_t i = 0; i < face_descriptors2.size(); ++i) {
                         name = "unknown";
-                        if (length(face_descriptors[0] - face_descriptors2[i])< 0.5) {
-                            found = true;
+                        if (length(face_descriptors[0] - face_descriptors2[i])< 0.5) {found = true;
                             name = "user";
                             long xcenter = (locations2[i].right() + locations2[i].left()) / 2;
                             long ycenter = (locations2[i].bottom() + locations2[i].top()) / 2;
@@ -429,12 +428,12 @@ void humanTracking(){
                             cout <<"data(main) = "<< *data<<endl;
                         }   // END OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
 
-                         if(!found){data = STOP;}
+
                         //cout<<"data = "<<data<<endl;
                         names.push_back(name);
 
                     }   // END OF INNER IF CONDITION.
-
+			if(!found){data = STOP;}
                     int i = 0;
 
 
@@ -458,11 +457,11 @@ void humanTracking(){
             putText(frame, format("OpenCV DNN ; FPS = %.2f",fpsOpencvDNN), Point(10, 50), FONT_HERSHEY_SIMPLEX, 1.4, Scalar(0, 0, 255), 4);
 
             // 웹캠에서 촬영하는 영상을 보여준다; Enter 키를 누르면 종료.
-            //cv::imshow("HumanTrackingUV",frame);
-            //if (cv::waitKey(30)==13) break;
-		//char key = getch();
+            cv::imshow("HumanTrackingUV",frame);
+           if (cv::waitKey(30)==13) break;
+	    //   char key = getch();
 		//if(key == 'q') break;
-            //countFrame++;
+            countFrame++;
 
 
         }// END OF WHILE LOOP
@@ -486,20 +485,27 @@ void humanTracking(){
     isEnd = true;
 }
 void lidar(int fd) {
-    cout<<"lidar thread"<<endl;
     class rplidar rplidarA1;
     char *move;
     while (!isEnd) {
         rplidarA1.scan();
         rplidarA1.retrieve();
         move = rplidarA1.returnMove(data);
+	cout<<"move::"<< move<<endl;
         rplidarA1.result();
-        write(fd, data, strlen(data));
+        write(fd, move, strlen(move));
+	if(IS_FAIL(rplidarA1.RESULT)) {
+	    rplidarA1.~rplidar();
+	    exit(EXIT_FAILURE);
+	}
     }
 }
-int main(int argc, char *argv[] ) {
-    std::string end("end\n");
-	std::string start("start\n");
+int main(int argc, char **argv ) {
+
+
+    std::string a("end\n");
+	std::string b("start\n");
+    char* socket_data;
     int fd;
     fd=open("/dev/ttyACM0", O_RDWR | O_NOCTTY );  // 컨트롤 c 로 취소안되게 하기 | O_NOCTTY
 
@@ -571,16 +577,21 @@ int main(int argc, char *argv[] ) {
         perror("init_serialport: Couldn't set term attributes");
         return -1;
     }
-    char *socket_data;
-char readBuff[BUFFER_SIZE];
-char sendBuff[BUFFER_SIZE];
-struct sockaddr_in serverAddress, clientAddress;
-int server_fd, client_fd;
-unsigned int client_addr_size;
-ssize_t receivedBytes;
-ssize_t sentBytes;
+    char readBuff[BUFFER_SIZE];
+    char sendBuff[BUFFER_SIZE];
+    struct sockaddr_in serverAddress, clientAddress;
+    int server_fd, client_fd;
+    unsigned int client_addr_size;
+    ssize_t receivedBytes;
+    ssize_t sentBytes;
  
-  
+    /*
+    if (argc != 2)
+    {
+    printf("사용법 : ./filename 포트번호 \n");
+    exit(0);
+    }
+    */
  
     socklen_t clientAddressLength = 0;
  
@@ -610,9 +621,10 @@ ssize_t sentBytes;
  
  
     printf("Server: waiting connection request.\n");
-
-    while(1){
-
+     while (1)
+    {
+ 	
+      
         // 클라이언트 IP 확인
         struct sockaddr_in connectSocket;
         socklen_t connectSocketLength = sizeof(connectSocket);
@@ -624,25 +636,29 @@ ssize_t sentBytes;
             printf("Client : %s\n", clientIP);
  
  
-        //소켓통신 시작
-        client_addr_size = sizeof(clientAddress); 
+        //채팅 프로그램 제작
+        client_addr_size = sizeof(clientAddress);
+ 
         receivedBytes = recvfrom(server_fd, readBuff, BUFF_SIZE, 0, (struct sockaddr*)&clientAddress, &client_addr_size);
-	    socket_data = readBuff;
-	    printf("%s \n",socketdata);
+	socket_data = readBuff;
+	printf("%s \n",socket_data);
 	
-	//main 종료
-	if(end.compare(socket_data) == 0){
-	close(fd);
-	close(sever_fd);
-	cv::destroyWindow("HumanTrackingUV");
-	break;
+
+	if(a.compare(socket_data) == 0){
+	cout<<"프로세스를 멈춥니다."<<endl;
+    close(fd);
+    close(socket_fd);
+    cv::destroyWindow("HumanTrackingUV");
+    break;
 	}
-	else if(start.compare(socket_data) == 0){
-	thread hThread(humanTracking);
-    thread lThread{lidar,fd};
+	else if(b.compare(socket_data) == 0){
+	cout<<"프로세스를 시작합니다"<<endl;
+     thread hThread(humanTracking);
+    //thread lThread{lidar,fd};
     hThread.join();
-    lThread.join();}
-    else {cout<<"알 수 없는 명령어 입니다. 다시 입력해주세요."<<endl;}
+    //lThread.join();
+
+	} 
         readBuff[receivedBytes] = '\0';
 	//printf("%s",readBuff);
 	
@@ -651,9 +667,12 @@ ssize_t sentBytes;
 	
         sprintf(sendBuff, "%s", readBuff);
         sentBytes = sendto(server_fd, sendBuff, strlen(sendBuff), 0, (struct sockaddr*)&clientAddress, sizeof(clientAddress));
-//소켓통신 끝
     }
 
+
+
+
+   
 
 
 
