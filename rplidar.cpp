@@ -1,13 +1,13 @@
 #include <iostream>
 #include <rplidar.h>    // RPLIDAR SDK 접속
-#include <cmath>        // 수학적 거리 계산 전용
+#include <algorithm>    // 수학적 거리 계산 전용
 #include "rplidar.hpp"
 
 #define CYCLE 360
 #define DIRECTION 4
 
-#define DIST_STOP 500   // 장애물 기준 거리를 500mm, 즉 0.5미터로 잡는다.
-#define DIST_REF 700    // 방향을 틀었을 때, 최소한 0.7미터의 여유가 있을 때로 선택한다.
+#define DIST_STOP 300   // 장애물 기준 거리를 500mm, 즉 0.5미터로 잡는다.
+#define DIST_REF 500    // 방향을 틀었을 때, 최소한 0.7미터의 여유가 있을 때로 선택한다.
 
 #define GO "g"
 #define BACK "b"
@@ -19,15 +19,19 @@ using namespace rp::standalone::rplidar;
 
 /*__________ START: CONSTRUCTOR AND DESTRUCTOR __________*/
 // CONSTRUCTOR
-rplidar::rplidar(): RESULT(NULL), rplidarDRIVER(NULL), platformMOVE(NULL)
+rplidar::rplidar(): RESULT(NULL), rplidarDRIVER(NULL), platformMOVE(NULL), avoid(false)
 {
 
     // RPLIDAR A1과 통신을 위한 장치 드라이버 생성.
     // RPLIDAR 제어는 드라이버를 통해서 진행된다: 예. rplidarA1 -> functionName().
     std::cout << "[INFO] RPLIDAR DRIVER:";
     rplidarDRIVER = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
+    if (!rplidarDRIVER) {
+        std::cout << "...FAILED!";
+        std::cout << "[ERROR] FAILED TO CREATE DRIVER." << std::endl;
+        
+    }
     std::cout << " ...READY!" << std::endl;
-
     // 시리얼 포트 경로 "/dev/ttyUSB0"를 통해
     /*
         >> `rp::standalone::rplidar::connet()`: RPLidar 드라이버를 연결할 RPLIDAR A1 장치와 어떤 시리얼 포트를 사용할 것인지,
@@ -44,6 +48,17 @@ rplidar::rplidar(): RESULT(NULL), rplidarDRIVER(NULL), platformMOVE(NULL)
         std::cout << "[INFO] MOTOR START:";
         rplidarDRIVER -> startMotor();
         std::cout << " ...SUCCESS!" << std::endl;
+
+        // RPLIDAR에는 여러 종류의 스캔 모드가 있는데, 이 중에서 일반 스캔 모드를 실행한다.
+        /*
+            >> `rp::standalone::rplidar::startScanExpress(<force>,<use_TypicalScan>,<options>,<outUsedScanMode>)`:
+                ...<force>           - 모터 작동 여부를 떠나 가ㅇ제(force)로 스캔 결과를 반환하도록 한다.
+                ...<use_TypicalScan> - true는 일반 스캔모드(초당 8k 샘플링), false는 호환용 스캔모드(초당 2k 샘플링).
+                ...<options>         - 0을 사용하도록 권장하며, 그 이외의 설명은 없다.
+                ...<outUsedScanMode> - RPLIDAR가 사용할 스캔모드 가ㅄ이 반환되는 변수.
+        */
+        RplidarScanMode scanMode;
+        rplidarDRIVER -> startScan(false, true, 0, &scanMode);
     }
 
     // 연결이 실패하였으면 에러를 알리고, 객체를 자동적으로 파괴한다.
@@ -57,43 +72,36 @@ rplidar::rplidar(): RESULT(NULL), rplidarDRIVER(NULL), platformMOVE(NULL)
 // DESTRUCTOR
 rplidar::~rplidar(){
 
-    // RPLIDAR A1 센서의 모터 동작을 중지.
-    std::cout << "[INFO] STOP MOTOR:";
-    rplidarDRIVER -> stopMotor();
-    std::cout << " ...SUCCESS!" << std::endl;
+    // RPLIDAR 드라이버가 존재할 경우...
+    if (rplidarDRIVER){
 
-    // RPLIDAR A1 센서와 장치 드라이버 통신 단절.
-    std::cout << "[INFO] DISCONNECTING:";
-    rplidarDRIVER -> disconnect();
-    std::cout << " ...SUCCESS!" << std::endl;
+        // RPLIDAR가 정상적으로 작동한 경우...
+        if (IS_OK(RESULT)){
+            // RPLIDAR A1 센서의 모터 동작을 중지.
+            std::cout << "[INFO] STOP MOTOR:";
+            rplidarDRIVER -> stopMotor();
+            std::cout << " ...SUCCESS!" << std::endl;
 
-    // RPLIDAR A1과 통신을 위한 장치 드라이버 제거.
-    std::cout << "[INFO] CLOSING DRIVER:";
-    RPlidarDriver::DisposeDriver(rplidarDRIVER);
-    std::cout << " ...SUCCESS!" << std::endl;
+            // RPLIDAR A1 센서와 장치 드라이버 통신 단절.
+            std::cout << "[INFO] DISCONNECTING:";
+            rplidarDRIVER -> disconnect();
+            std::cout << " ...SUCCESS!" << std::endl;
+        }
+
+        // RPLIDAR A1과 통신을 위한 장치 드라이버 제거.
+        std::cout << "[INFO] CLOSING DRIVER:";
+        RPlidarDriver::DisposeDriver(rplidarDRIVER);
+        std::cout << " ...SUCCESS!" << std::endl;
+    }
+
 }
 /*__________ END: CONSTRUCTOR AND DESTRUCTOR __________*/
 
 
 
 /*__________ START: PUBLIC MEMBERS __________*/
-// RPLIDAT A1 센서로 한 사이클 스캔한다.
-void rplidar::scan() {
-
-    // RPLIDAR에는 여러 종류의 스캔 모드가 있는데, 이 중에서 일반 스캔 모드를 실행한다.
-    /*
-        >> `rp::standalone::rplidar::startScanExpress(<force>,<use_TypicalScan>,<options>,<outUsedScanMode>)`:
-            ...<force>           - 모터 작동 여부를 떠나 가ㅇ제(force)로 스캔 결과를 반환하도록 한다.
-            ...<use_TypicalScan> - true는 일반 스캔모드(초당 8k 샘플링), false는 호환용 스캔모드(초당 2k 샘플링).
-            ...<options>         - 0을 사용하도록 권장하며, 그 이외의 설명은 없다.
-            ...<outUsedScanMode> - RPLIDAR가 사용할 스캔모드 가ㅄ이 반환되는 변수.
-    */
-    RplidarScanMode scanMode;
-    rplidarDRIVER -> startScan(false, true, 0, &scanMode);
-}
-
 // RPLIDAR A1 센서 스캔 결과를 가져온다.
-void rplidar::retrieve(){
+void rplidar::scan(){
 
     // 노드 개수(8192)를 계산적으로 구한다.
     this->nodeCount = sizeof(this->nodes)/sizeof(rplidar_response_measurement_node_hq_t);
@@ -128,12 +136,12 @@ void rplidar::retrieve(){
 }
 
 // 우선순위 결정 후 최종적으로 보내줄 이동신호를 반환한다.
-char* rplidar::returnMove(char* MOVE){
-    this->behavior(MOVE);
+char* rplidar::move(char* MOVE){
+    platformMOVE = this->behavior(MOVE);
     return platformMOVE;
 }
 
-// 계산된 거리와 최종 이동방향, 그리고 결과값을 보여준다.
+// 계산된 거리와 최종 이동방향을 보여준다.
 void rplidar::result(){
     
     std::cout << "=============" << std::endl;
@@ -152,87 +160,115 @@ void rplidar::result(){
 // RPLIDAR A1 센서 스캔 결과를 통해 사방 거리를 하나로 축약한다.
 void rplidar::compressDistance(){
 
-    // <angleRange>: 총 방향 개수, <distances[]>: 거리를 담는 배열, <count>: 방향 카운터, <angleOF_prev>: 이전 위상가ㅄ을 받아내기 위한 변수.
-    int angleRange = CYCLE/DIRECTION;
-    int count = 0, angleOFF_prev = NULL;
+    std::fill(rplidarDIST, rplidarDIST+DIRECTION, -1);
 
-    std::fill(rplidarDIST, rplidarDIST+DIRECTION, 0);
-
-    // 스캔 결과를 오름차순으로 하나씩 확인한다.
+    // RETRIEVE THE SCANNED DATA ONE-BY-ONE.
     for (int i = 0; i < nodeCount; i++){    // START OF FOR LOOP: READING SCAN DATA
 
-        // 각도는 도 단위 (+ 위상), 거리는 밀리미터 단위로 선정 (범위외 거리는 0으로 반환).
+        // ANGLE (DEGREE) AND DISTANCE (MILLIMETER): DISTANCE OUTSIDE THE RANGE IS NOTED 0.
         float angle = nodes[i].angle_z_q14 * 90.f / (1 << 14);
         float distance = nodes[i].dist_mm_q2 / (1 << 2);
 
-        // 플랫폼 구조물로 인해서 인식되는 원치않은 각도를 무시한다.
-        if ((12.5 < angle && angle < 16.5) || (343.5 < angle && angle <347.5)) continue;
-        
-        // 하나의 방향이라고 인지할 수 있도록 정해놓은 batch 범위가 있으며, 중앙에서 얼마나 벗어난 각도인지 확인.
-        // 가ㅄ이 크면 클수록 중앙과 가깝다는 의미.
-        int angleOFF = abs((lround(angle) % angleRange)-angleRange/2);
-        
-        // 현재 위상가ㅄ이 0이고 이전 위상가ㅄ이 1이면 방향 카운터를 증가시킨다.
-        // 반대로 설정하면 초반에 바로 (현재 = 1, 이전 = 0) 가ㅄ이 나올 수 있어 오류는 발생하지 않지만 첫 방향의 최소거리가 계산되지 않는다.
-        if (angleOFF == 0 && angleOFF_prev == 1) count++;
+        // std::cout << nodes[i].angle_z_q14 * 90.f / (1 << 14) << ", " << nodes[i].dist_mm_q2 / (1 << 2) << std::endl;
 
-        // 처리되지 않은 나머지 전방 각도 당 거리를 계산하기 위하여 방향 카운터 초기화.
-        if (count == DIRECTION) count = 0;
+        // DIRECTION: FRONT (112)
+        if (angle >= 124 && angle <= 236) {
+            if (rplidarDIST[2] <= 0 || distance == 0) rplidarDIST[2] = std::max(rplidarDIST[2],distance);
+            else rplidarDIST[2] = std::min(rplidarDIST[2], distance);
+        }
 
-        // 루프를 돌기 전에 현재 위상가ㅄ을 이전 위상가ㅄ으로 할당한다.
-        angleOFF_prev = angleOFF;
-        
-        // 최소거리를 저장한다.
-        if (rplidarDIST[count] == 0) rplidarDIST[count] = distance;
-        else if (rplidarDIST[count] > distance && distance != 0) rplidarDIST[count] = distance;
+        // DIRECTION: BACK (60)
+        else if ((angle <=  30 || angle >= 330) && distance > 300) {
+            if (rplidarDIST[0] <= 0 || distance == 0) rplidarDIST[0] = std::max(rplidarDIST[0],distance);
+            else rplidarDIST[0] = std::min(rplidarDIST[0], distance);
+        }
+
+        // DIRECTION: LEFT (94)
+        else if (angle > 30 & angle < 124) {
+            if (rplidarDIST[1] <= 0 || distance == 0) rplidarDIST[1] = std::max(rplidarDIST[1],distance);
+            else rplidarDIST[1] = std::min(rplidarDIST[1], distance);
+        }
+
+        // DIRECTION: RIGHT (94)
+        else if (angle > 236 && angle < 330) {
+            if (rplidarDIST[3] <= 0 || distance == 0) rplidarDIST[3] = std::max(rplidarDIST[3],distance);
+            else rplidarDIST[3] = std::min(rplidarDIST[3], distance);
+        }
+
+        // REDUNDANT DIRECTION
+        else continue;
+
     }
 }
 
 // RPLIDAR 거리와 플랫폼 이동 신호를 통합하여 우선순위를 결정한다.
-void rplidar::behavior(char* MOVE){
+char* rplidar::behavior(char* move){
 
-    this->platformMOVE = MOVE;
+    // STOP
+    if (*move == *STOP) return STOP;
 
-    // REFERENCE
-    /*
-        >> detectPostion: 영상에 탐지된 대상자가 왼쪽(l) 혹은 오른쪽(r)에 있는지 알려주는 파라미터.
-        >> platformMOVE: 영상에 탐지된 대상자를 기반으로 전진(g), 후진(b), 좌회전(l), 우회전(r), 혹은 정지(s)하는지 알려주는 파라미터.
-        >> rplidarDIST = 전방으로 시작으로 시계방향으로 거리를 알려주는 파라미터; {전방, 우, 우X2, ..., 우X(n-1), 후방, 좌X(n-1),  ... , 좌X2, 좌}. 0은 측정범위 밖.
-    */
-
-    // 정지 신호에는 무조건 정지한다.
-    if (*platformMOVE == *STOP) {platformMOVE = STOP;}
-    // 전방에 장애물이 존재할 경우 (0은 측정범위 밖); 후진과 정지는 따로 조건문이 주어져 있으므로 고려하지 않는다.
-    else if (0 < rplidarDIST[DIRECTION/2] && rplidarDIST[DIRECTION/2] <= DIST_STOP && *platformMOVE != *BACK){
-
-        int moveDetermined = 0;
-
-        if(*platformMOVE != *BACK){
-            // 전 방향의 거리여부를 앞에서부터 뒤로 좌우를 동시에 확인한다 (후방 제외).
-            for (int i = (DIRECTION/2) -1; i > 0; i--){
-
-                // 오른쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 왼쪽보다 거리적 여유가 많을 시 오른쪽으로 회전한다.
-                if (((rplidarDIST[i] > DIST_REF && rplidarDIST[i] >= rplidarDIST[DIRECTION - i] && rplidarDIST[DIRECTION - i] > 0) || rplidarDIST[i] == 0) && *platformMOVE != *LEFT)
-                    {platformMOVE = RIGHT; moveDetermined = 1; break;}
-                // 반면 왼쪽이 정해진 기준보다 거리적 여유가 있는 동시에, 오른쪽보다 거리적 여유가 많을 시에는 왼쪽으로 회전한다.
-                else if(((rplidarDIST[DIRECTION - i] > DIST_REF  && rplidarDIST[i] <= rplidarDIST[DIRECTION - i] &&  rplidarDIST[i] > 0 ) || rplidarDIST[DIRECTION - i] == 0 ) && *platformMOVE != *RIGHT)
-                    {platformMOVE = LEFT; moveDetermined = 1; break;}
-            }
-
-        // 위의 조건문을 만족하지 않았다는 것은 정해진 기준의 여유보다 거리가 적다는 의미이다.
+    // GO
+    else if (*move == *GO && !(rplidarDIST[2] < 0)) {
+        
+        // OBSTACLE FOUND IN RANGE
+        if (0 < rplidarDIST[2] && rplidarDIST[2] <= DIST_STOP){
+            avoid = true;
+        
+            // AVOID TO LEFT
+            if (  ((rplidarDIST[1] > DIST_REF && rplidarDIST[1] >= rplidarDIST[3] && rplidarDIST[3] > 0 ) || rplidarDIST[1] == 0) /* && *platformMOVE != *RIGHT */)
+                return LEFT;
+            // AVOID TO RIGHT
+            else if (  ((rplidarDIST[3] > DIST_REF  && rplidarDIST[1] <= rplidarDIST[3] &&  rplidarDIST[1] > 0 ) || rplidarDIST[3] == 0 ) /* && *platformMOVE != *LEFT */)
+                return RIGHT;
+            // AVOID BACK
+            else if ( rplidarDIST[0] == 0 || rplidarDIST[0] > DIST_REF)
+                return BACK;
+            else
+                return STOP;
         }
-
-        // 후방 거리여부를 확인하고, 전방향이 막혀 있으면 움직이지 않는다.
-        if (moveDetermined == 0){
-            if (rplidarDIST[0] > DIST_REF || rplidarDIST[0] == 0) platformMOVE = BACK;
-            else platformMOVE = STOP;
-        }
+        
+        // OBSTACLE NOT FOUND IN RANGE
+        avoid = false;
+        return GO;
     }
 
-    // 뒤에 장애물이 있으면 뒤로 움직이는 신호에도 정지시킨다.
-    else if (*platformMOVE == *BACK && rplidarDIST[0] > 0 && rplidarDIST[0] <= DIST_REF) {platformMOVE = STOP;}
-    
-    // 아무런 조건을 만족하지 않으면 장애물의 구애를 받지 않는다는 의미로 신호대로 움직인다.
+    // LEFT
+    else if (*move == *LEFT && !(rplidarDIST[1] < 0)) {
+
+        // AVOIDING RIGHT BUT OBSTACLE STILL FOUND
+        if (avoid && (0 < rplidarDIST[2] && rplidarDIST[2] <= DIST_STOP) ){
+            // OBSTACLE AT RIGHT
+            if (rplidarDIST[3] < DIST_REF) return STOP;
+            // IF NOT
+            return RIGHT;
+        }
+
+        avoid = false;
+        return LEFT;
+    }
+
+    // RIGHT
+    else if (*move == *RIGHT && !(rplidarDIST[3] < 0)) {
+
+        // AVOIDING LEFT BUT OBSTACLE STILL FOUND
+        if (avoid && (0 < rplidarDIST[2] && rplidarDIST[2] <= DIST_STOP) ){
+            // OBSTACLE AT LEFT
+            if (rplidarDIST[1] < DIST_REF) return STOP;
+            // IF NOT
+            return LEFT;
+        }
+
+        avoid = false;
+        return RIGHT;
+    }
+
+    // BACK
+    else if (*move == *BACK && !(rplidarDIST[0] < 0)) {
+        if (rplidarDIST[0] > 0 && rplidarDIST[0] <= DIST_REF) return STOP;
+        return BACK;
+    } 
+
+    else return STOP;
 
 }
 /*__________ END: PRIVATE MEMBERS __________*/
