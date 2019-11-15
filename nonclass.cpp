@@ -32,6 +32,7 @@
 #include <fcntl.h>    /* File control definitions */
 #include <termios.h>  /* POSIX terminal control definitions */
 #include <thread>
+#include <fstream>
 
 /*__________ RPLIDAR __________*/
 #include <rplidar.h>
@@ -424,6 +425,7 @@ void humanTracking(){
                             {
                                 data = STOP;
                             }
+                            
                             cout << "size = " << size << endl;
                             cout <<"data(main) = "<< *data<<endl;
                         }   // END OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
@@ -434,6 +436,8 @@ void humanTracking(){
 
                     }   // END OF INNER IF CONDITION.
 			if(!found){data = STOP;}
+            ofstream ofs("data.txt");
+            ofs << data << endl;
                     int i = 0;
 
 
@@ -591,6 +595,7 @@ int main(int argc, char **argv ) {
 
     // 영상인식과 자율주행이 모두 끝나면 R/W 파일을 닫는다.
     close(fd);
+    close(ofs);
 
     // 영상인식과 자율주행이 모두 끝났으면 OpenCV 창을 닫는다.
     cv::destroyWindow("HumanTrackingUV");
