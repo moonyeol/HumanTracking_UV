@@ -205,30 +205,43 @@ void rplidar::compressDistance(){
 char* rplidar::behavior(char* move){
 
     // STOP
-    if (*move == *STOP) return STOP;
-
+    if (*move == *STOP) {
+        avoid = 0;
+        return STOP;
+    }
     // GO
     else if (*move == *GO && !(rplidarDIST[2] < 0)) {
         
         // OBSTACLE FOUND IN RANGE
         if (0 < rplidarDIST[2] && rplidarDIST[2] <= DIST_STOP){
-            avoid = true;
-        
+
+            // BACKING UP
+            if (avoid == -1) {
+                goto backing;
+            }
+            
             // AVOID TO LEFT
-            if (  ((rplidarDIST[1] > DIST_REF && rplidarDIST[1] >= rplidarDIST[3] && rplidarDIST[3] > 0 ) || rplidarDIST[1] == 0) /* && *platformMOVE != *RIGHT */)
+            if (  ((rplidarDIST[1] > DIST_REF && rplidarDIST[1] >= rplidarDIST[3] && rplidarDIST[3] > 0 ) || rplidarDIST[1] == 0) ){
+                avoid = 1;
                 return LEFT;
+            }
             // AVOID TO RIGHT
-            else if (  ((rplidarDIST[3] > DIST_REF  && rplidarDIST[1] <= rplidarDIST[3] &&  rplidarDIST[1] > 0 ) || rplidarDIST[3] == 0 ) /* && *platformMOVE != *LEFT */)
+            else if (  ((rplidarDIST[3] > DIST_REF  && rplidarDIST[1] <= rplidarDIST[3] &&  rplidarDIST[1] > 0 ) || rplidarDIST[3] == 0 ) ){
+                avoid = 1;
                 return RIGHT;
+            }
             // AVOID BACK
-            else if ( rplidarDIST[0] == 0 || rplidarDIST[0] > DIST_REF)
+            else if ( rplidarDIST[0] == 0 || rplidarDIST[0] > DIST_REF){
+            backing:
+                avoid = -1;
                 return BACK;
+            }
             else
                 return STOP;
         }
         
         // OBSTACLE NOT FOUND IN RANGE
-        avoid = false;
+        avoid = 0;
         return GO;
     }
 
@@ -243,7 +256,7 @@ char* rplidar::behavior(char* move){
             return RIGHT;
         }
 
-        avoid = false;
+        avoid = 0;
         return LEFT;
     }
 
@@ -258,7 +271,7 @@ char* rplidar::behavior(char* move){
             return LEFT;
         }
 
-        avoid = false;
+        avoid = 0;
         return RIGHT;
     }
 
@@ -268,7 +281,10 @@ char* rplidar::behavior(char* move){
         return BACK;
     } 
 
-    else return STOP;
+    else {
+        avoid = 0;
+        return STOP;
+    }
 
 }
 /*__________ END: PRIVATE MEMBERS __________*/
