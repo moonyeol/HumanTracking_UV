@@ -489,15 +489,13 @@ void lidar(int fd) {
     char *move;
     while (!isEnd) {
         rplidarA1.scan();
-        rplidarA1.retrieve();
-        move = rplidarA1.returnMove(data);
-	cout<<"move::"<< move<<endl;
+        move = rplidarA1.move(data);
         rplidarA1.result();
         write(fd, move, strlen(move));
-	if(IS_FAIL(rplidarA1.RESULT)) {
-	    rplidarA1.~rplidar();
-	    exit(EXIT_FAILURE);
-	}
+//	if(IS_FAIL(rplidarA1.RESULT)) {
+//	    rplidarA1.~rplidar();
+//	    exit(EXIT_FAILURE);
+//	}
     }
 }
 int main(int argc, char **argv ) {
@@ -565,7 +563,8 @@ int main(int argc, char **argv ) {
     // If ICANON is also set, the ERASE character erases the preced‐ing input character, and WERASE erases the preceding word.
     // When any of the characters INTR, QUIT, SUSP, or DSUSP are received, generate the corresponding signal.
 
-    toptions.c_oflag &= ~OPOST; //Enable implementation-defined output processing.
+    //toptions.c_oflag &= ~OPOST; //Enable implementation-defined output processing.
+	toptions.c_oflag=0;
 
     // see: http://unixwiz.net/techtips/termios-vmin-vtime.html
     toptions.c_cc[VMIN]  = 0;

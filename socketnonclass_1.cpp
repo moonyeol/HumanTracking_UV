@@ -37,7 +37,8 @@
 #include <rplidar.h>
 #include "rplidar.hpp"
 #include <cmath>
-
+/*socket*/
+#include "socket.h"
 
 using namespace cv;
 using namespace cv::dnn;
@@ -113,6 +114,7 @@ const std::string  userImg = "pic/user.jpg";
 long tempsize=0;
 char* data = STOP;
 bool isEnd = false;
+bool isStart = false;
 
 class Recognizer{
 
@@ -296,7 +298,17 @@ public:
 
 
 void humanTracking(){
+
+
+
+
+
+
     try {   // TRY BLOCK CODE START: WHOLE PROCESS FOR DETECTION AND AUTOMATION.
+	while(true){
+		cout << "";
+		if(isStart)break;
+		continue;}
         Recognizer recognizer(landmarkDat,encodeDat,odConfigFile,odWeightFile,fdConfigFile,fdWeightFile,classesFile);
 
         // CREATE VECTOR OBJECT CALLED "detection1" WHICH CAN CONTAIN LIST OF MAT OBJECTS.
@@ -453,14 +465,14 @@ void humanTracking(){
 
 
             tt_opencvDNN = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-            fpsOpencvDNN = 1/tt_opencvDNN;
+            fpsOpencvDNN = 1000/tt_opencvDNN;
             putText(frame, format("OpenCV DNN ; FPS = %.2f",fpsOpencvDNN), Point(10, 50), FONT_HERSHEY_SIMPLEX, 1.4, Scalar(0, 0, 255), 4);
 
             // 웹캠에서 촬영하는 영상을 보여준다; Enter 키를 누르면 종료.
-            cv::imshow("HumanTrackingUV",frame);
-           if (cv::waitKey(30)==13) break;
-	    //   char key = getch();
-		//if(key == 'q') break;
+            //cv::imshow("HumanTrackingUV",frame);
+           if (cv::waitKey(60)==13) break;
+	if(isEnd) break;
+
             countFrame++;
 
 
@@ -482,30 +494,123 @@ void humanTracking(){
         cout << e.what() << endl;
     }
 
-    isEnd = true;
+
 }
 void lidar(int fd) {
+		while(true){
+		cout << "";
+		if(isStart)break;
+		continue;}
     class rplidar rplidarA1;
     char *move;
     while (!isEnd) {
         rplidarA1.scan();
-        rplidarA1.retrieve();
-        move = rplidarA1.returnMove(data);
-	cout<<"move::"<< move<<endl;
+        move = rplidarA1.move(data);
         rplidarA1.result();
         write(fd, move, strlen(move));
-	if(IS_FAIL(rplidarA1.RESULT)) {
-	    rplidarA1.~rplidar();
-	    exit(EXIT_FAILURE);
-	}
+//	if(IS_FAIL(rplidarA1.RESULT)) {
+//	    rplidarA1.~rplidar();
+//	    exit(EXIT_FAILURE);
+//	}
     }
 }
+
+void socketFunc(){
+    std::string a("end\n");
+    std::string b("start\n");
+    char *socket_data;
+
+    char readBuff[BUFFER_SIZE];
+    char sendBuff[BUFFER_SIZE];
+    struct sockaddr_in serverAddress, clientAddress;
+    int server_fd, client_fd;
+    unsigned int client_addr_size;
+    ssize_t receivedBytes;
+    ssize_t sentBytes;
+
+    socklen_t clientAddressLength = 0;
+ 
+    memset(&serverAddress, 0, sizeof(serverAddress));
+    memset(&clientAddress, 0, sizeof(clientAddress));
+ 
+    serverAddress.sin_family = AF_INET;
+    serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+    serverAddress.sin_port = htons(20162);
+ 
+ 
+    // 서버 소켓 생성 및 서버 주소와 bind
+ 
+    // 서버 소켓 생성(UDP니 SOCK_DGRAM이용)
+    if ((server_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) // SOCK_DGRAM : UDP
+    {
+        printf("Sever : can not Open Socket\n");
+        exit(0);
+    }
+ 
+    // bind 과정
+    if (bind(server_fd, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
+    {
+        printf("Server : can not bind local address");
+        exit(0);
+    }
+ 
+ 
+    printf("Server: waiting connection request.\n");
+     while (1)
+    {
+ 	
+      
+        // 클라이언트 IP 확인
+        struct sockaddr_in connectSocket;
+        socklen_t connectSocketLength = sizeof(connectSocket);
+        getpeername(client_fd, (struct sockaddr*)&clientAddress, &connectSocketLength);
+        //char clientIP[sizeof(clientAddress.sin_addr) + 1] = { 0 };
+        //sprintf(clientIP, "%s", inet_ntoa(clientAddress.sin_addr));
+        // 접속이 안되었을 때는 while에서 출력 x
+        //if(strcmp(clientIP,"0.0.0.0") != 0)
+            //printf("Client : %s\n", clientIP);
+
+ 
+ 
+        //채팅 프로그램 제작
+        client_addr_size = sizeof(clientAddress);
+ 
+        receivedBytes = recvfrom(server_fd, readBuff, BUFF_SIZE, 0, (struct sockaddr*)&clientAddress, &client_addr_size);
+	socket_data = readBuff;
+	//printf("%s \n",socket_data);
+
+	
+
+
+        readBuff[receivedBytes] = '\0';
+	//printf("%s",readBuff);
+	
+        //fputs(readBuff, stdout);
+        fflush(stdout);
+	
+        sprintf(sendBuff, "%s", readBuff);
+
+
+	sentBytes = sendto(server_fd, sendBuff, strlen(sendBuff), 0, (struct sockaddr*)&clientAddress, sizeof(clientAddress));
+	if(a.compare(sendBuff) == 0){
+		cout<<"프로세스를 멈춥니다."<<endl;
+		isEnd = true;
+
+    		break;
+	}
+	else if(b.compare(sendBuff) == 0){
+		cout<<"프로세스를 시작합니다"<<endl;
+		isStart = true;
+	} 
+
+    }
+    		close(server_fd);
+}
+
+
 int main(int argc, char **argv ) {
 
 
-    std::string a("end\n");
-	std::string b("start\n");
-    char* socket_data;
     int fd;
     fd=open("/dev/ttyACM0", O_RDWR | O_NOCTTY );  // 컨트롤 c 로 취소안되게 하기 | O_NOCTTY
 
@@ -577,97 +682,17 @@ int main(int argc, char **argv ) {
         perror("init_serialport: Couldn't set term attributes");
         return -1;
     }
-    char readBuff[BUFFER_SIZE];
-    char sendBuff[BUFFER_SIZE];
-    struct sockaddr_in serverAddress, clientAddress;
-    int server_fd, client_fd;
-    unsigned int client_addr_size;
-    ssize_t receivedBytes;
-    ssize_t sentBytes;
- 
-    /*
-    if (argc != 2)
-    {
-    printf("사용법 : ./filename 포트번호 \n");
-    exit(0);
-    }
-    */
- 
-    socklen_t clientAddressLength = 0;
- 
-    memset(&serverAddress, 0, sizeof(serverAddress));
-    memset(&clientAddress, 0, sizeof(clientAddress));
- 
-    serverAddress.sin_family = AF_INET;
-    serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
-    serverAddress.sin_port = htons(20162);
- 
- 
-    // 서버 소켓 생성 및 서버 주소와 bind
- 
-    // 서버 소켓 생성(UDP니 SOCK_DGRAM이용)
-    if ((server_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) // SOCK_DGRAM : UDP
-    {
-        printf("Sever : can not Open Socket\n");
-        exit(0);
-    }
- 
-    // bind 과정
-    if (bind(server_fd, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
-    {
-        printf("Server : can not bind local address");
-        exit(0);
-    }
- 
- 
-    printf("Server: waiting connection request.\n");
-     while (1)
-    {
- 	
-      
-        // 클라이언트 IP 확인
-        struct sockaddr_in connectSocket;
-        socklen_t connectSocketLength = sizeof(connectSocket);
-        getpeername(client_fd, (struct sockaddr*)&clientAddress, &connectSocketLength);
-        char clientIP[sizeof(clientAddress.sin_addr) + 1] = { 0 };
-        sprintf(clientIP, "%s", inet_ntoa(clientAddress.sin_addr));
-        // 접속이 안되었을 때는 while에서 출력 x
-        if(strcmp(clientIP,"0.0.0.0") != 0)
-            printf("Client : %s\n", clientIP);
- 
- 
-        //채팅 프로그램 제작
-        client_addr_size = sizeof(clientAddress);
- 
-        receivedBytes = recvfrom(server_fd, readBuff, BUFF_SIZE, 0, (struct sockaddr*)&clientAddress, &client_addr_size);
-	socket_data = readBuff;
-	printf("%s \n",socket_data);
-	
 
-	if(a.compare(socket_data) == 0){
-	cout<<"프로세스를 멈춥니다."<<endl;
-    close(fd);
-    close(socket_fd);
-    cv::destroyWindow("HumanTrackingUV");
-    break;
-	}
-	else if(b.compare(socket_data) == 0){
-	cout<<"프로세스를 시작합니다"<<endl;
-     thread hThread(humanTracking);
-    //thread lThread{lidar,fd};
-    hThread.join();
-    //lThread.join();
+ 
 
-	} 
-        readBuff[receivedBytes] = '\0';
-	//printf("%s",readBuff);
+		thread sThread(socketFunc);
+     		thread hThread(humanTracking);
+    		thread lThread{lidar,fd};
+
+    		hThread.join();
+		sThread.join();
+    		lThread.join();
 	
-        //fputs(readBuff, stdout);
-        fflush(stdout);
-	
-        sprintf(sendBuff, "%s", readBuff);
-        sentBytes = sendto(server_fd, sendBuff, strlen(sendBuff), 0, (struct sockaddr*)&clientAddress, sizeof(clientAddress));
-    }
 
 
 
@@ -680,7 +705,7 @@ int main(int argc, char **argv ) {
 
 
     // 영상인식과 자율주행이 모두 끝나면 R/W 파일을 닫는다.
-    //close(fd);
+    close(fd);
 
     // 영상인식과 자율주행이 모두 끝났으면 OpenCV 창을 닫는다.
     //cv::destroyWindow("HumanTrackingUV");
