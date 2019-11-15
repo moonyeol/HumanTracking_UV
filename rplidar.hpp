@@ -20,17 +20,19 @@ class rplidar{
         // 계산된 거리와 최종 이동방향을 보여준다.
         void result();
 
+
+
     private:
         RPlidarDriver* rplidarDRIVER;
-    
-        float rplidarDIST[DIRECTION] = {-1};
 
         // RPLIDAR A1에서 측정한 거리와 플랫폼 이동신호를 담는 변수이다.
         // int rplidarDIST[DIRECTION] = {0};
         char* platformMOVE;
 
+        float rplidarDIST[DIRECTION] = {-1};
+
         // AVOID OBSTACLE
-        bool avoid;
+        int avoid;
 
         // RPLIDAR A1 센서와 드라이버와의 통신 결과를 담는다.
         u_result RESULT;
