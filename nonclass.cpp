@@ -8,13 +8,13 @@
 #include <opencv2/videoio.hpp>
 
 
-#include <opencv4/opencv2/core.hpp>
-#include <opencv4/opencv2/opencv.hpp>
-#include <opencv4/opencv2/highgui.hpp>
-#include <opencv4/opencv2/highgui/highgui.hpp>
-#include <opencv4/opencv2/imgproc.hpp>
-#include <opencv4/opencv2/dnn/dict.hpp>
-#include <opencv4/opencv2/cudaimgproc.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/dnn/dict.hpp>
+#include <opencv2/cudaimgproc.hpp>
 #include <dlib/opencv/cv_image.h>
 #include <dlib/image_processing/frontal_face_detector.h>
 #include <dlib/image_processing.h>
@@ -23,6 +23,7 @@
 #include <dlib/dnn.h>
 #include <dlib/image_transforms.h>
 #include <cstdlib>
+#include <stdlib.h>
 #include <iostream>
 #include <stdio.h>    /* Standard input/output definitions */
 #include <string>
@@ -370,7 +371,7 @@ void humanTracking(){
             cap >> frame;
             double t = cv::getTickCount();
             resize(frame,frame, Size(640,480));
-
+	    found = false;
             //found = recognizer.humanDetection(frame);
 
 
@@ -394,7 +395,7 @@ void humanTracking(){
                     // START OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
                     for (size_t i = 0; i < face_descriptors2.size(); ++i) {
                         name = "unknown";
-                        if (length(face_descriptors[0] - face_descriptors2[i])< 0.5) {
+                        if (length(face_descriptors[0] - face_descriptors2[i])< 0.5) {found = true;
                             name = "user";
                             long xcenter = (locations2[i].right() + locations2[i].left()) / 2;
                             long ycenter = (locations2[i].bottom() + locations2[i].top()) / 2;
@@ -432,7 +433,7 @@ void humanTracking(){
                         names.push_back(name);
 
                     }   // END OF INNER IF CONDITION.
-
+			if(!found){data = STOP;}
                     int i = 0;
 
 
@@ -456,10 +457,10 @@ void humanTracking(){
             putText(frame, format("OpenCV DNN ; FPS = %.2f",fpsOpencvDNN), Point(10, 50), FONT_HERSHEY_SIMPLEX, 1.4, Scalar(0, 0, 255), 4);
 
             // 웹캠에서 촬영하는 영상을 보여준다; Enter 키를 누르면 종료.
-            //cv::imshow("HumanTrackingUV",frame);
-            if (cv::waitKey(30)==13) break;
-		char key = getch();
-		if(key == 'q') break;
+            cv::imshow("HumanTrackingUV",frame);
+           if (cv::waitKey(30)==13) break;
+	    //   char key = getch();
+		//if(key == 'q') break;
             countFrame++;
 
 
@@ -490,8 +491,13 @@ void lidar(int fd) {
         rplidarA1.scan();
         rplidarA1.retrieve();
         move = rplidarA1.returnMove(data);
+	cout<<"move::"<< move<<endl;
         rplidarA1.result();
-        write(fd, data, strlen(data));
+        write(fd, move, strlen(move));
+	if(IS_FAIL(rplidarA1.RESULT)) {
+	    rplidarA1.~rplidar();
+	    exit(EXIT_FAILURE);
+	}
     }
 }
 int main(int argc, char **argv ) {
