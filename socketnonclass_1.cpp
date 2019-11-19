@@ -4,7 +4,7 @@
 //위 3개 참고
 //
 //컴파일 방
-//g++ -std=c++11 -O3 -I.. /home/eon/dlib/dlib/all/source.cpp -lpthread -lX11 -ljpeg -DDLIB_JPEG_SUPPORT -o main main.cpp $(pkg-config opencv4 --libs --cflags)
+//g++ -std=c++11 -O3 -I.. /home/nvidia/dlib/dlib/all/source.cpp -lpthread -lX11 -ljpeg -DDLIB_JPEG_SUPPORT -o 1119 socketnonclass_1.cpp $(pkg-config opencv4 --libs --cflags)
 #include <opencv2/videoio.hpp>
 
 
@@ -34,9 +34,9 @@
 #include <thread>
 
 /*__________ RPLIDAR __________*/
-#include <rplidar.h>
-#include "rplidar.hpp"
-#include <cmath>
+//#include <rplidar.h>
+//#include "rplidar.hpp"
+//#include <cmath>
 /*socket*/
 #include "socket.h"
 
@@ -44,17 +44,17 @@ using namespace cv;
 using namespace cv::dnn;
 using namespace dlib;
 using namespace std;
-using namespace rp::standalone::rplidar;
+//using namespace rp::standalone::rplidar;
 
 
 #define CYCLE 360       // 한 사이클은 360도.
 #define DIRECTION 4     // 이동방향 개수.
 
-#define LEFT "l"
-#define RIGHT "r"
-#define GO "g"
-#define BACK "b"
-#define STOP "s"
+#define LEFT 'l'
+#define RIGHT 'r'
+#define GO 'g'
+#define BACK 'b'
+#define STOP 's'
 
 
 template <template <int,template<typename>class,int,typename> class block, int N, template<typename>class BN, typename SUBNET>
@@ -112,7 +112,7 @@ const std::string  classesFile = "names";
 const std::string  userImg = "pic/user.jpg";
 // CAFFE의 PROTOTXT와 CAFFEMODEL는 DARKNET의 CONFIG와 WEIGHT 파일과 동일하다 종류의 파일이다;
 long tempsize=0;
-char* data = STOP;
+char data = STOP;
 bool isEnd = false;
 bool isStart = false;
 
@@ -437,7 +437,7 @@ void humanTracking(){
                                 data = STOP;
                             }
                             cout << "size = " << size << endl;
-                            cout <<"data(main) = "<< *data<<endl;
+                            cout <<"data(main) = "<< data<<endl;
                         }   // END OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
 
 
@@ -446,6 +446,9 @@ void humanTracking(){
 
                     }   // END OF INNER IF CONDITION.
 			if(!found){data = STOP;}
+ofstream camera_data("from_opencv");
+		if(camera_data.is_open())
+{camera_data << data;}
                     int i = 0;
 
 
@@ -469,7 +472,7 @@ void humanTracking(){
             putText(frame, format("OpenCV DNN ; FPS = %.2f",fpsOpencvDNN), Point(10, 50), FONT_HERSHEY_SIMPLEX, 1.4, Scalar(0, 0, 255), 4);
 
             // 웹캠에서 촬영하는 영상을 보여준다; Enter 키를 누르면 종료.
-            //cv::imshow("HumanTrackingUV",frame);
+            cv::imshow("HumanTrackingUV",frame);
            if (cv::waitKey(60)==13) break;
 	if(isEnd) break;
 
@@ -496,7 +499,7 @@ void humanTracking(){
 
 
 }
-void lidar(int fd) {
+/*void lidar(int fd) {
 		while(true){
 		cout << "";
 		if(isStart)break;
@@ -514,7 +517,7 @@ void lidar(int fd) {
 //	}
     }
 }
-
+*/
 void socketFunc(){
     std::string a("end\n");
     std::string b("start\n");
@@ -595,103 +598,30 @@ void socketFunc(){
 	if(a.compare(sendBuff) == 0){
 		cout<<"프로세스를 멈춥니다."<<endl;
 		isEnd = true;
-
     		break;
 	}
 	else if(b.compare(sendBuff) == 0){
 		cout<<"프로세스를 시작합니다"<<endl;
 		isStart = true;
 	} 
-
     }
-    		close(server_fd);
+    close(server_fd);
 }
 
 
 int main(int argc, char **argv ) {
 
 
-    int fd;
-    fd=open("/dev/ttyACM0", O_RDWR | O_NOCTTY );  // 컨트롤 c 로 취소안되게 하기 | O_NOCTTY
-
-    //struct termios newtio;
-    struct termios toptions;
-
-
-
-
-    //fprintf(stderr,"init_serialport: opening port %s @ %d bps\n",
-
-    //        serialport,baud);
-
-
-
-    //fd = open(serialport, O_RDWR | O_NOCTTY | O_NDELAY);
-
-    if (fd == -1)  {
-
-        perror("init_serialport: Unable to open port ");
-
-        return -1;
-
-    }
-
-
-
-    if (tcgetattr(fd, &toptions) < 0) {
-
-        perror("init_serialport: Couldn't get term attributes");
-
-        return -1;
-
-    }
-
-
-
-
-    // 8N1
-
-    toptions.c_cflag &= ~PARENB;//Enable parity generation on output and parity checking for input.
-
-    toptions.c_cflag &= ~CSTOPB;//Set two stop bits, rather than one.
-
-    toptions.c_cflag &= ~CSIZE;//Character size mask.  Values are CS5, CS6, CS7, or CS8.
-
-
-
-    // no flow control
-
-    toptions.c_cflag &= ~CRTSCTS;//(not in POSIX) Enable RTS/CTS (hardware) flow control. [requires _BSD_SOURCE or _SVID_SOURCE]
-
-    toptions.c_cflag = B115200 | CS8 | CLOCAL | CREAD; // CLOCAL : Ignore modem control lines CREAD :Enable receiver.
-
-    toptions.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl
-    toptions.c_iflag = IGNPAR | ICRNL;
-
-    toptions.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG); // Enable canonical mode (described below)./Echo input characters.
-    // If ICANON is also set, the ERASE character erases the preced‐ing input character, and WERASE erases the preceding word.
-    // When any of the characters INTR, QUIT, SUSP, or DSUSP are received, generate the corresponding signal.
-
-    toptions.c_oflag &= ~OPOST; //Enable implementation-defined output processing.
-
-    // see: http://unixwiz.net/techtips/termios-vmin-vtime.html
-    toptions.c_cc[VMIN]  = 0;
-    toptions.c_cc[VTIME] = 20;
-
-    if( tcsetattr(fd, TCSANOW, &toptions) < 0) {
-        perror("init_serialport: Couldn't set term attributes");
-        return -1;
-    }
-
+    
  
 
 		thread sThread(socketFunc);
      		thread hThread(humanTracking);
-    		thread lThread{lidar,fd};
+    		//thread lThread{lidar,fd};
 
     		hThread.join();
 		sThread.join();
-    		lThread.join();
+    		//lThread.join();
 	
 
 
@@ -705,10 +635,10 @@ int main(int argc, char **argv ) {
 
 
     // 영상인식과 자율주행이 모두 끝나면 R/W 파일을 닫는다.
-    close(fd);
+    //close(fd);
 
     // 영상인식과 자율주행이 모두 끝났으면 OpenCV 창을 닫는다.
-    //cv::destroyWindow("HumanTrackingUV");
+    cv::destroyWindow("HumanTrackingUV");
 
     return 0;
 }
