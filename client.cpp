@@ -26,6 +26,8 @@ int main(int argc, char* argv[])
     char sendBuff[BUFF_SIZE];
     char readBuff[BUFF_SIZE];
     std::string run("run\n");
+    std::string start("start\n");
+ 
  
  
     ssize_t receivedBytes;
@@ -66,6 +68,8 @@ int main(int argc, char* argv[])
 		//pid_t pid = fork();
 		//if(!pid){
   			//printf("test-1");
+std::system("sudo chmod a+rw /dev/ttyACM0");
+std::system("nvidia");
 			std::system(" nohup ./1119 OPENCV_DNN_OPENCL_ALLOW_ALL_DEVICES=1  &");
 			std::system("\n");
   			//printf("test0");
@@ -77,6 +81,12 @@ int main(int argc, char* argv[])
 		//	wait(&status);
 		//}		
 
+	}
+	else if(start.compare(send_data)==0)
+	{	
+		std::system(" nohup ./rplidarnon &");
+		//std::system(" ./rplidarnon");
+		std::system("\n");
 	}
 	//else{
   	//printf("test1");
