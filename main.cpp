@@ -288,9 +288,15 @@ void humanTracking() {
 		/*
 			>> `std::vector< std::vector< std::vector<Mat> > >`: Creates 3D vector array containing Mat data-type.
 		*/
-		RotatedRect rot_rect
-		Mat frame;
+		RotatedRect rot_rect;
+		Mat frame, img_hsv, img_mask, img_ROI, mask_ROI, objectHistogram;
 		cv::VideoCapture cap;
+
+		int channels[] = { 0 };
+		int hsize[] = { 64 };
+		float range1[] = { 0, 180 };
+		const float* histRange[] = { range1 };
+
 
 		// OPEN DEFAULT CAMERA OF `/dev/video0` WHERE ITS INTEGER IS FROM THE BACK.
 		/*
@@ -337,8 +343,11 @@ void humanTracking() {
 			resize(frame, frame, Size(640, 480));
 			found = false;
 			if (isTracking) {
+				cvtColor(frame, img_hsv, COLOR_BGR2HSV);
+				calcBackProject(&img_hsv, 1, channels, objectHistogram, bp, histRange);
+
 				rot_rect = CamShift(frame, roi, TermCriteria(TermCriteria::EPS | TermCriteria::COUNT, 10, 1));
-				cout << rot_rect << endl;
+				//cout << rot_rect << endl;
 			} else {
 				if (countFrame % 3 == 0) {   // START OF OUTER IF CONDITION
 					//face recoginition 구현 중
@@ -355,6 +364,15 @@ void humanTracking() {
 							name = "user";
 
 							roi = cv::Rect(locations2[i].left, locations2[i].top, locations2[i].right - locations2[i].left, locations2[i].bottom - locations2[i].top);
+							cvtColor(frame, img_hsv, COLOR_BGR2HSV);
+							inRange(img_hsv, Scalar(0., 30., 30.), Scalar(180., 255., 255.), img_mask);
+
+							img_ROI = Mat(img_hsv, roi);
+							mask_ROI = Mat(img_mask, roi);
+							calcHist(&img_ROI, 1, channels, mask_ROI, objectHistogram, 1, hsize, histRange);
+
+							normalize(objectHistogram, objectHistogram, 0, 255, NORM_MINMAX);
+
 							isTracking = true;
 
 
