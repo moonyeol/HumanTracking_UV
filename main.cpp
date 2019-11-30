@@ -1,11 +1,3 @@
-//https://github.com/davisking/dlib/blob/master/tools/python/src/face_recognition.cpp
-//http://dlib.net/dnn_face_recognition_ex.cpp.html
-//기존 face_recognition_dlib
-//위 3개 참고
-//
-//컴파일 방
-//g++ -std=c++11 -O3 -I.. /home/nvidia/dlib/dlib/all/source.cpp -lpthread -lX11 -ljpeg -DDLIB_JPEG_SUPPORT -o 1119 socketnonclass_1.cpp $(pkg-config opencv4 --libs --cflags)
-
 #include <opencv2/videoio.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/opencv.hpp>
@@ -101,9 +93,6 @@ long tempsize = 0;
 char data = STOP;
 bool isEnd = false;
 bool isStart = false;
-bool isTracking = false;
-
-cv::Rect roi;
 
 class Recognizer {
 
@@ -288,15 +277,8 @@ void humanTracking() {
 		/*
 			>> `std::vector< std::vector< std::vector<Mat> > >`: Creates 3D vector array containing Mat data-type.
 		*/
-		RotatedRect rot_rect;
-		Mat frame, img_hsv, img_mask, img_ROI, mask_ROI, objectHistogram;
+		Mat frame;
 		cv::VideoCapture cap;
-
-		int channels[] = { 0 };
-		int hsize[] = { 64 };
-		float range1[] = { 0, 180 };
-		const float* histRange[] = { range1 };
-
 
 		// OPEN DEFAULT CAMERA OF `/dev/video0` WHERE ITS INTEGER IS FROM THE BACK.
 		/*
@@ -342,84 +324,58 @@ void humanTracking() {
 			double t = cv::getTickCount();
 			resize(frame, frame, Size(640, 480));
 			found = false;
-			if (isTracking) {
-				cvtColor(frame, img_hsv, COLOR_BGR2HSV);
-				calcBackProject(&img_hsv, 1, channels, objectHistogram, bp, histRange);
+			if (countFrame % 3 == 0) {   // START OF OUTER IF CONDITION
+				//face recoginition 구현 중
+				std::vector<dlib::rectangle> locations2 = recognizer.faceDetection(frame);
+				dlib::array<matrix<rgb_pixel>> faces2 = recognizer.faceLandMark(frame, locations2);
+				std::vector<matrix<float, 0, 1>> face_descriptors2 = recognizer.faceEncoding(faces2);
+				std::vector<String> names;
+				String name;
+				// START OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
+				for (size_t i = 0; i < face_descriptors2.size(); ++i) {
+					name = "unknown";
+					if (length(face_descriptors[0] - face_descriptors2[i]) < 0.5) {
+						found = true;
+						name = "user";
+						long xcenter = (locations2[i].right() + locations2[i].left()) / 2;
+						long ycenter = (locations2[i].bottom() + locations2[i].top()) / 2;
+						long size = (locations2[i].right() - locations2[i].left());
+						if (xcenter < 180)
+						{
+							data = LEFT;
+						}
+						else if (xcenter > 400)
+						{
+							data = RIGHT;
+						}
+						else if (size > 60)
+						{
 
-				rot_rect = CamShift(frame, roi, TermCriteria(TermCriteria::EPS | TermCriteria::COUNT, 10, 1));
-				//cout << rot_rect << endl;
-			} else {
-				if (countFrame % 3 == 0) {   // START OF OUTER IF CONDITION
-					//face recoginition 구현 중
-					std::vector<dlib::rectangle> locations2 = recognizer.faceDetection(frame);
-					dlib::array<matrix<rgb_pixel>> faces2 = recognizer.faceLandMark(frame, locations2);
-					std::vector<matrix<float, 0, 1>> face_descriptors2 = recognizer.faceEncoding(faces2);
-					std::vector<String> names;
-					String name;
-					// START OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
-					for (size_t i = 0; i < face_descriptors2.size(); ++i) {
-						name = "unknown";
-						if (length(face_descriptors[0] - face_descriptors2[i]) < 0.5) {
-							found = true;
-							name = "user";
+							data = BACK;
+						}
+						else if (size < 50)
+						{
+							data = GO;
+						}
+						else
+						{
+							data = STOP;
+						}
+						cout << "size = " << size << endl;
+						cout << "data(main) = " << data << endl;
+					}   //end if
+					names.push_back(name);
+				}   // end loop
+				if (!found) { data = STOP; }
+				if (isEnd) data = 'q';
+				buff[0] = data;
+				write(fd_from_opencv, buff, 1);
+				for (int i = 0; i < locations2.size(); i++) {
+					cv::rectangle(frame, Point(locations2[i].left(), locations2[i].top()), Point(locations2[i].right(), locations2[i].bottom()), Scalar(0, 255, 0), 2);
+					putText(frame, names[i], Point(locations2[i].left() + 6, locations2[i].top() - 6), FONT_HERSHEY_DUPLEX, 1.0, Scalar(255, 255, 255), 2);
 
-							roi = cv::Rect(locations2[i].left, locations2[i].top, locations2[i].right - locations2[i].left, locations2[i].bottom - locations2[i].top);
-							cvtColor(frame, img_hsv, COLOR_BGR2HSV);
-							inRange(img_hsv, Scalar(0., 30., 30.), Scalar(180., 255., 255.), img_mask);
-
-							img_ROI = Mat(img_hsv, roi);
-							mask_ROI = Mat(img_mask, roi);
-							calcHist(&img_ROI, 1, channels, mask_ROI, objectHistogram, 1, hsize, histRange);
-
-							normalize(objectHistogram, objectHistogram, 0, 255, NORM_MINMAX);
-
-							isTracking = true;
-
-
-
-
-
-
-							long xcenter = (locations2[i].right() + locations2[i].left()) / 2;
-							long ycenter = (locations2[i].bottom() + locations2[i].top()) / 2;
-							long size = (locations2[i].right() - locations2[i].left());
-							if (xcenter < 180)
-							{
-								data = LEFT;
-							}
-							else if (xcenter > 400)
-							{
-								data = RIGHT;
-							}
-							else if (size > 60)
-							{
-
-								data = BACK;
-							}
-							else if (size < 50)
-							{
-								data = GO;
-							}
-							else
-							{
-								data = STOP;
-							}
-							cout << "size = " << size << endl;
-							cout << "data(main) = " << data << endl;
-						}   //end if
-						names.push_back(name);
-					}   // end loop
-					if (!found) { data = STOP; }
-					if (isEnd) data = 'q';
-					buff[0] = data;
-					write(fd_from_opencv, buff, 1);
-					for (int i = 0; i < locations2.size(); i++) {
-						cv::rectangle(frame, Point(locations2[i].left(), locations2[i].top()), Point(locations2[i].right(), locations2[i].bottom()), Scalar(0, 255, 0), 2);
-						putText(frame, names[i], Point(locations2[i].left() + 6, locations2[i].top() - 6), FONT_HERSHEY_DUPLEX, 1.0, Scalar(255, 255, 255), 2);
-
-					} //end loop
-				}   // END if
-			}
+				} //end loop
+			}   // END if
 			double tt_opencvDNN = 0;
 			double fpsOpencvDNN = 0;
 
@@ -427,7 +383,7 @@ void humanTracking() {
 			fpsOpencvDNN = 1000 / tt_opencvDNN;
 			// putText(frame, format("OpenCV DNN ; FPS = %.2f",fpsOpencvDNN), Point(10, 50), FONT_HERSHEY_SIMPLEX, 1.4, Scalar(0, 0, 255), 4);
 			 // 웹캠에서 촬영하는 영상을 보여준다; Enter 키를 누르면 종료.
-			 cv::imshow("HumanTrackingUV",frame);
+			 //cv::imshow("HumanTrackingUV",frame);
 			//if (cv::waitKey(30) == 13) break;
 			if (isEnd) break;
 			countFrame++;
@@ -521,6 +477,6 @@ int main(int argc, char** argv) {
 	hThread.join();
 	sThread.join();
 	// 영상인식과 자율주행이 모두 끝났으면 OpenCV 창을 닫는다.
-	cv::destroyWindow("HumanTrackingUV");
+	//cv::destroyWindow("HumanTrackingUV");
 	return 0;
 }
