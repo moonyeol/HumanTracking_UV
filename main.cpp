@@ -1,3 +1,17 @@
+
+//https://github.com/davisking/dlib/blob/master/tools/python/src/face_recognition.cpp
+//http://dlib.net/dnn_face_recognition_ex.cpp.html
+//기존 face_recognition_dlib
+//위 3개 참고
+//
+//컴파일 방
+//g++ main.cpp -o main -std=c++11 -I/home/nvidia/dlib/dlib/all/source.cpp -L/usr/local/cuda-10.0/lib64 -lcuda -lcudnn -lcublas -lpthread -DDLIB_JPEG_SUPPORT $(pkg-config opencv4 --libs --cflags) $(pkg-config dlib-1 --libs --cflags)
+//g++ main.cpp -o main6 -O3 -std=c++11 -I/home/nvidia/Dlib/dlib-19.17 /home/nvidia/Dlib/dlib-19.17/dlib/all/source.cpp -L/usr/local/cuda-10.0/lib64 -lX11 -ljpeg -lcuda -lcudnn -lcublas -lpthread -DDLIB_JPEG_SUPPORT $(pkg-config opencv4 --libs --cflags)
+
+//use gpu command
+//OPENCV_DNN_OPENCL_ALLOW_ALL_DEVICES=1 ./main6
+
+
 #include <opencv2/videoio.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/opencv.hpp>
@@ -286,7 +300,7 @@ void humanTracking() {
 			Access, or "open" default camera which is presumes to be `/dev/video0` file
 				...(which is where number 0 may have derived from).
 		*/
-		cap.open(1); // 노트북 카메라는 cap.open(1) 또는 cap.open(-1)
+		cap.open(0); // 노트북 카메라는 cap.open(1) 또는 cap.open(-1)
 		// USB 카메라는 cap.open(0);
 		int x1;
 		int y1;
@@ -324,7 +338,7 @@ void humanTracking() {
 			double t = cv::getTickCount();
 			resize(frame, frame, Size(640, 480));
 			found = false;
-			if (countFrame % 3 == 0) {   // START OF OUTER IF CONDITION
+			//if (countFrame % 3 == 0) {   // START OF OUTER IF CONDITION
 				//face recoginition 구현 중
 				std::vector<dlib::rectangle> locations2 = recognizer.faceDetection(frame);
 				dlib::array<matrix<rgb_pixel>> faces2 = recognizer.faceLandMark(frame, locations2);
@@ -334,7 +348,7 @@ void humanTracking() {
 				// START OF FOR LOOP: USER DETECTION AND LOCATION FINDER.
 				for (size_t i = 0; i < face_descriptors2.size(); ++i) {
 					name = "unknown";
-					if (length(face_descriptors[0] - face_descriptors2[i]) < 0.5) {
+					if (length(face_descriptors[0] - face_descriptors2[i]) < 0.6) {
 						found = true;
 						name = "user";
 						long xcenter = (locations2[i].right() + locations2[i].left()) / 2;
@@ -348,12 +362,12 @@ void humanTracking() {
 						{
 							data = RIGHT;
 						}
-						else if (size > 60)
+						else if (size > 47)
 						{
 
 							data = BACK;
 						}
-						else if (size < 50)
+						else if (size < 44)
 						{
 							data = GO;
 						}
@@ -375,16 +389,16 @@ void humanTracking() {
 					putText(frame, names[i], Point(locations2[i].left() + 6, locations2[i].top() - 6), FONT_HERSHEY_DUPLEX, 1.0, Scalar(255, 255, 255), 2);
 
 				} //end loop
-			}   // END if
+			//}   // END if
 			double tt_opencvDNN = 0;
 			double fpsOpencvDNN = 0;
 
 			tt_opencvDNN = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
 			fpsOpencvDNN = 1000 / tt_opencvDNN;
-			// putText(frame, format("OpenCV DNN ; FPS = %.2f",fpsOpencvDNN), Point(10, 50), FONT_HERSHEY_SIMPLEX, 1.4, Scalar(0, 0, 255), 4);
+			 //putText(frame, format("OpenCV DNN ; FPS = %.2f",fpsOpencvDNN), Point(10, 50), FONT_HERSHEY_SIMPLEX, 1.4, Scalar(0, 0, 255), 4);
 			 // 웹캠에서 촬영하는 영상을 보여준다; Enter 키를 누르면 종료.
-			 //cv::imshow("HumanTrackingUV",frame);
-			//if (cv::waitKey(30) == 13) break;
+			 cv::imshow("HumanTrackingUV",frame);
+			if (cv::waitKey(30) == 13) break;
 			if (isEnd) break;
 			countFrame++;
 		}// END OF WHILE LOOP
@@ -477,6 +491,6 @@ int main(int argc, char** argv) {
 	hThread.join();
 	sThread.join();
 	// 영상인식과 자율주행이 모두 끝났으면 OpenCV 창을 닫는다.
-	//cv::destroyWindow("HumanTrackingUV");
+	cv::destroyWindow("HumanTrackingUV");
 	return 0;
 }

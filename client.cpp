@@ -43,14 +43,14 @@ int main(int argc, char* argv[])
 		sprintf(sendBuff, "%s", msg);
 		send_data = sendBuff;
 		if (run.compare(send_data) == 0) {
-			std::system("sudo chmod a+rw /dev/ttyACM0");
+			std::system("sudo chmod a+rw /dev/ttyTHS0");
 			std::system("nvidia");
-			std::system(" nohup ./1119 OPENCV_DNN_OPENCL_ALLOW_ALL_DEVICES=1  &");
+			std::system(" nohup ./main OPENCV_DNN_OPENCL_ALLOW_ALL_DEVICES=1  &");
 			std::system("\n");
 		}
 		else if (start.compare(send_data) == 0)
 		{
-			std::system(" nohup ./rplidarnon &");
+			std::system(" nohup ./rplidar_revision.out &");
 			std::system("\n");
 		}
 		sentBytes = sendto(client_socket, sendBuff, strlen(sendBuff), 0, (struct sockaddr*) & serverAddress, sizeof(serverAddress));
